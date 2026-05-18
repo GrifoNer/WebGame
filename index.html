@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Бункер 200: Голоса в голове</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="game-container" id="gameRoot">
+    <div class="scene" id="sceneBg">
+        <div class="scene-overlay">
+            <div class="speaker" id="speakerName">🔷 ИИ-Ассистент</div>
+        </div>
+    </div>
+    <div class="dialog-panel">
+        <div class="dialog-text" id="dialogMsg">Загрузка нейросети бункера 200...</div>
+    </div>
+    <div class="game-area" id="gameArea">
+        <div class="game-status" id="gameStatus">⚡ СИСТЕМА ГОТОВА</div>
+        <div id="gameWidget"></div>
+    </div>
+    <div class="action-buttons" id="actionButtons"></div>
+</div>
+
+<script src="games/guessNumber.js"></script>
+<script src="games/ticTacToe.js"></script>
+<script src="games/checkers.js"></script>
+<script src="games/fool.js"></script>
+<script src="games/blackjack.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
