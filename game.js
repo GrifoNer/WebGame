@@ -164,6 +164,147 @@ function finishQuizAndRoulette() {
     renderButtons([]);
 }
 
+// ========== СЕКРЕТНАЯ ПАНЕЛЬ ДЛЯ ТЕСТИРОВАНИЯ (Shift + T) ==========
+let testPanelVisible = false;
+let testPanelElement = null;
+
+function createTestPanel() {
+    if(testPanelElement) return;
+    
+    testPanelElement = document.createElement("div");
+    testPanelElement.id = "testPanel";
+    testPanelElement.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #0a0f2aee;
+        backdrop-filter: blur(10px);
+        border: 2px solid #0ff;
+        border-radius: 15px;
+        padding: 15px;
+        z-index: 10000;
+        font-family: 'Orbitron', monospace;
+        color: #0ff;
+        min-width: 260px;
+        box-shadow: 0 0 20px rgba(0,255,255,0.3);
+        display: none;
+        flex-direction: column;
+        gap: 8px;
+    `;
+    
+    const title = document.createElement("div");
+    title.innerText = "🔧 ТЕСТОВАЯ ПАНЕЛЬ (Shift+T)";
+    title.style.cssText = `
+        text-align: center;
+        font-size: 0.75rem;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #0ff;
+        padding-bottom: 5px;
+    `;
+    testPanelElement.appendChild(title);
+    
+    const levels = [
+        { name: "⚛️ Угадай число", idx: 0, game: "guessNumber" },
+        { name: "🔌 Крестики-нолики", idx: 1, game: "ticTacToe" },
+        { name: "🌀 Шашки", idx: 2, game: "checkers" },
+        { name: "🧠 Дурак", idx: 3, game: "foolCard" },
+        { name: "💨 Блэкджек", idx: 4, game: "blackjack" },
+        { name: "📖 Сюжет (начало)", idx: -1, game: "story" },
+        { name: "🧪 Викторина (финал)", idx: -2, game: "quiz" },
+        { name: "✨ Сбросить прогресс", idx: -3, game: "reset" }
+    ];
+    
+    levels.forEach(level => {
+        const btn = document.createElement("button");
+        btn.innerText = level.name;
+        btn.style.cssText = `
+            background: #1f2a46;
+            border: 1px solid cyan;
+            border-radius: 20px;
+            padding: 6px 12px;
+            color: #bbf0ff;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
+            transition: 0.1s;
+        `;
+        btn.onmouseenter = () => { btn.style.background = "#2f3f60"; btn.style.transform = "scale(0.98)"; };
+        btn.onmouseleave = () => { btn.style.background = "#1f2a46"; btn.style.transform = "scale(1)"; };
+        
+        btn.onclick = () => {
+            jumpToLevel(level.idx, level.game);
+            toggleTestPanel();
+        };
+        testPanelElement.appendChild(btn);
+    });
+    
+    document.body.appendChild(testPanelElement);
+}
+
+function toggleTestPanel() {
+    if(!testPanelElement) {
+        createTestPanel();
+    }
+    if(testPanelVisible) {
+        testPanelElement.style.display = "none";
+        testPanelVisible = false;
+    } else {
+        testPanelElement.style.display = "flex";
+        testPanelVisible = true;
+    }
+}
+
+function jumpToLevel(levelIdx, gameType) {
+    if(gameType === "story") {
+        GameState.stage = "story";
+        GameState.completedGames = [false, false, false, false, false];
+        GameState.answersWrong = 0;
+        GameState.gameAnswers = { guessNumber: null, ticTacToe: null, checkers: null, foolCard: null, blackjack: null };
+        GameState.activeGame = null;
+        setDialog("🔷 ИИ-Ассистент", "КРИТИЧЕСКИЙ СБОЙ! 5 ошибок в бункере 200. Ты — инженер. Исправляй поломки через мини-игры.");
+        renderButtons([{label:"🚀 НАЧАТЬ РЕМОНТ", onClick:()=> continueStory()}]);
+        setBackground("https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?w=1100&auto=format");
+        clearWidget();
+    } 
+    else if(gameType === "quiz") {
+        if(!GameState.gameAnswers.guessNumber) GameState.gameAnswers.guessNumber = 42;
+        if(!GameState.gameAnswers.ticTacToe) GameState.gameAnswers.ticTacToe = "центр";
+        if(!GameState.gameAnswers.checkers) GameState.gameAnswers.checkers = "простая шашка";
+        if(!GameState.gameAnswers.foolCard) GameState.gameAnswers.foolCard = "♠ Туз";
+        if(!GameState.gameAnswers.blackjack) GameState.gameAnswers.blackjack = 21;
+        startQuiz();
+    }
+    else if(gameType === "reset") {
+        location.reload();
+    }
+    else if(levelIdx >= 0 && levelIdx <= 4) {
+        GameState.stage = "playing_minigame";
+        GameState.activeGame = levelIdx;
+        GameState.completedGames[levelIdx] = false;
+        
+        const keys = ['guessNumber', 'ticTacToe', 'checkers', 'foolCard', 'blackjack'];
+        GameState.gameAnswers[keys[levelIdx]] = null;
+        
+        setDialog("🔷 ИИ-Ассистент", `🔧 ТЕСТ: Запуск ${levelIdx+1}/5`);
+        
+        if (levelIdx === 0) initGuessNumber();
+        else if (levelIdx === 1) initTicTacToe();
+        else if (levelIdx === 2) initCheckers();
+        else if (levelIdx === 3) initFool();
+        else if (levelIdx === 4) initBlackjack();
+        
+        renderButtons([]);
+    }
+}
+
+// Обработчик нажатия клавиш
+document.addEventListener("keydown", function(event) {
+    if(event.shiftKey && (event.key === 'T' || event.key === 't')) {
+        event.preventDefault();
+        toggleTestPanel();
+    }
+});
+
 function init() {
     setDialog("🔷 ИИ-Ассистент", "КРИТИЧЕСКИЙ СБОЙ! 5 ошибок в бункере 200. Ты — инженер. Исправляй поломки через мини-игры.");
     renderButtons([{label:"🚀 НАЧАТЬ РЕМОНТ", onClick:()=> continueStory()}]);
