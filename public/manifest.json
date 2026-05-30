@@ -1,0 +1,19 @@
+{
+  "name": "Бункер 200: Голоса в голове",
+  "short_name": "Бункер 200",
+  "description": "Психологический триллер-головоломка",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0a0f2a",
+  "background_color": "#010005",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

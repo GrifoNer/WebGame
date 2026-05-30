@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Нет соединения - Бункер 200</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 10% 20%, #0a0f2a, #010005);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', 'Courier New', monospace;
+            padding: 20px;
+        }
+        
+        .offline-container {
+            text-align: center;
+            background: rgba(8, 12, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 3rem 2rem;
+            border: 2px solid #0ff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            max-width: 500px;
+        }
+        
+        .offline-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            animation: pulse 1.5s infinite;
+        }
+        
+        h1 {
+            color: #0ff;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+        
+        p {
+            color: #ccc;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #1f2a46, #0e1628);
+            border: none;
+            font-family: 'Orbitron', monospace;
+            font-weight: bold;
+            padding: 0.8rem 2rem;
+            border-radius: 3rem;
+            color: #0ff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            border-bottom: 2px solid cyan;
+        }
+        
+        button:hover {
+            background: #2f3f60;
+            transform: scale(0.96);
+            box-shadow: 0 0 12px cyan;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .retry-count {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>СВЯЗЬ ПОТЕРЯНА</h1>
+        <p>Бункер 200 изолирован от внешнего мира.<br>
+        Некоторые функции могут быть недоступны.</p>
+        <button onclick="retryConnection()">🔄 ПОПРОБОВАТЬ СНОВА</button>
+        <div class="retry-count" id="retryCount"></div>
+    </div>
+    
+    <script>
+        let retryAttempts = 0;
+        
+        function retryConnection() {
+            retryAttempts++;
+            const retryDiv = document.getElementById('retryCount');
+            retryDiv.textContent = `Попытка ${retryAttempts}...`;
+            
+            if (navigator.onLine) {
+                window.location.href = '/';
+            } else {
+                setTimeout(() => {
+                    if (navigator.onLine) {
+                        window.location.href = '/';
+                    } else {
+                        retryDiv.textContent = `Нет соединения. Попыток: ${retryAttempts}`;
+                        if (retryAttempts >= 5) {
+                            retryDiv.textContent = 'Бункер полностью изолирован. Проверьте подключение к сети.';
+                        }
+                    }
+                }, 1000);
+            }
+        }
+        
+        // Слушаем восстановление сети
+        window.addEventListener('online', () => {
+            window.location.href = '/';
+        });
+    </script>
+</body>
+</html>

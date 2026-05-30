@@ -1,0 +1,16 @@
+{
+  "name": "bunker200",
+  "version": "1.0.0",
+  "description": "Бункер 200 - PWA игра",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:3002": "node server.js 3002",
+    "start:3003": "node server.js 3003",
+    "start:3004": "node server.js 3004",
+    "start:8080": "node server.js 8080"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

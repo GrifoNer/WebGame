@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бункер 200</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0f2a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icons/icon-512.png">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container" id="gameRoot">
+        <div class="scene" id="sceneBg">
+            <div class="scene-overlay">
+                <div class="speaker" id="speakerName">🔷 ИИ-Ассистент</div>
+            </div>
+        </div>
+        <div class="dialog-panel">
+            <div class="dialog-text" id="dialogMsg">Загрузка...</div>
+        </div>
+        <div class="game-area" id="gameArea">
+            <div class="game-status" id="gameStatus">⚡ СИСТЕМА ГОТОВА</div>
+            <div id="gameWidget"></div>
+        </div>
+        <div class="action-buttons" id="actionButtons"></div>
+    </div>
+    
+    <script>
+        // Регистрация Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('✅ SW зарегистрирован'))
+                    .catch(err => console.log('❌ SW ошибка:', err));
+            });
+        }
+    </script>
+    
+    <script src="games/guessNumber.js"></script>
+    <script src="games/ticTacToe.js"></script>
+    <script src="games/checkers.js"></script>
+    <script src="games/fool.js"></script>
+    <script src="games/blackjack.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
