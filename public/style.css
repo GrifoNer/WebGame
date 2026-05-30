@@ -292,3 +292,552 @@ input {
 .bj-card {
     animation: cardAppear 0.2s ease;
 }
+/* Режимы отображения */
+.game-area.hide-game {
+    display: none;
+}
+
+.dialog-panel.hide-dialog {
+    display: none;
+}
+
+/* Когда игра активна - игровая область видна, но диалог может быть скрыт */
+.game-container.game-mode .game-area {
+    display: block;
+}
+
+.game-container.game-mode .dialog-panel {
+    display: flex;
+}
+
+/* Когда только диалог (без игры) */
+.game-container.dialog-mode .game-area {
+    display: none;
+}
+
+.game-container.dialog-mode .action-buttons {
+    display: flex;
+}
+
+/* Плавное появление/исчезновение */
+.game-area, .dialog-panel {
+    transition: all 0.3s ease;
+}
+/* ========== РЕЖИМЫ ОТОБРАЖЕНИЯ ========== */
+.hide-game {
+    display: none !important;
+}
+
+.hide-dialog {
+    display: none !important;
+}
+
+/* Плавное появление/исчезновение */
+.game-area, .dialog-panel {
+    transition: opacity 0.3s ease, display 0.3s ease;
+}
+
+/* Когда игра активна и диалог скрыт - больше места игре */
+.game-container.game-mode .game-area {
+    flex: 1;
+    min-height: 300px;
+}
+
+/* Когда только диалог - центрируем диалог */
+.game-container.dialog-mode .dialog-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.game-container.dialog-mode .dialog-text {
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+/* Кнопки действий всегда видны */
+.action-buttons {
+    flex-shrink: 0;
+}
+
+/* Анимация смены режимов */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.game-area, .dialog-panel {
+    animation: fadeIn 0.3s ease;
+}
+
+/* ========== ПЛАВНЫЕ ПЕРЕХОДЫ ========== */
+
+/* Основные контейнеры */
+.game-container {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-area {
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                display 0.4s ease;
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: top center;
+}
+
+.dialog-panel {
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                display 0.4s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Скрытие игровой области */
+.game-area.hide-game {
+    display: none !important;
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+/* Скрытие диалоговой панели */
+.dialog-panel.hide-dialog {
+    display: none !important;
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+/* Режим только диалог */
+.game-container.dialog-mode .dialog-panel {
+    animation: dialogSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-container.dialog-mode .game-area {
+    animation: gameFadeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Режим только игра */
+.game-container.game-mode .game-area {
+    animation: gameSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-container.game-mode .dialog-panel {
+    animation: dialogFadeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Режим оба видны */
+.game-container.both-mode .game-area {
+    animation: gameFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-container.both-mode .dialog-panel {
+    animation: dialogFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Анимации */
+@keyframes dialogSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes gameSlideIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes dialogFadeOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes gameFadeOut {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+@keyframes dialogFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes gameFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Плавное появление кнопок */
+.action-buttons button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-buttons button:hover {
+    transform: scale(0.96);
+    transition: all 0.1s ease;
+}
+
+/* Плавное появление карт */
+.card, .cell, .checkers-cell, .bj-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover, .cell:hover, .checkers-cell:hover, .bj-card:hover {
+    transform: scale(1.02);
+    transition: all 0.1s ease;
+}
+
+/* Плавное появление игрового виджета */
+#gameWidget {
+    animation: widgetFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes widgetFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Плавное появление диалогового текста */
+.dialog-text {
+    transition: opacity 0.3s ease;
+    animation: textFadeIn 0.3s ease;
+}
+
+@keyframes textFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Плавное изменение фона */
+.scene {
+    transition: background-image 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Плавное появление/исчезновение панели тестирования */
+#testPanel {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Анимация для кнопок при появлении */
+.action-buttons button {
+    animation: buttonPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes buttonPopIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Плавное появление игровой сетки */
+.grid-3x3, .checkers-board, .cards-area {
+    animation: gridFadeIn 0.3s ease-out;
+}
+
+@keyframes gridFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Специальная анимация для русской рулетки */
+.roulette-dramatic {
+    animation: pulseRed 0.25s infinite alternate, 
+               rouletteAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes rouletteAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(-180deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+/* Анимация для карт в дураке при появлении */
+.card {
+    animation: cardAppear 0.2s ease-out;
+}
+
+@keyframes cardAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px) rotate(-5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+    }
+}
+
+/* Анимация для клеток шашек */
+.checkers-cell {
+    animation: cellAppear 0.15s ease-out;
+}
+
+@keyframes cellAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Анимация для диалогового окна при смене спикера */
+.speaker {
+    transition: all 0.2s ease;
+}
+
+/* Плавное изменение статуса игры */
+.game-status {
+    transition: all 0.3s ease;
+}
+
+/* Анимация для карт в блэкджеке */
+.bj-card {
+    animation: cardAppear 0.2s ease-out;
+}
+
+/* Плавное появление подсказок */
+#foolMsg, #checkersMsg, #tttMsg, #bjMsg, #hintMsg {
+    animation: msgFadeIn 0.3s ease;
+}
+
+@keyframes msgFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Плавное сворачивание/разворачивание игровой области */
+.game-area {
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+/* Плавная прокрутка */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Анимация загрузки */
+@keyframes loadingPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.loading {
+    animation: loadingPulse 1s infinite;
+}
+
+/* Плавное появление всей страницы */
+body {
+    animation: pageFadeIn 0.5s ease-out;
+}
+
+@keyframes pageFadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Плавное появление игрового контейнера */
+.game-container {
+    animation: containerSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes containerSlideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Анимация для карт при наведении */
+.card {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.3);
+}
+
+/* Анимация для клеток шашек при наведении */
+.checkers-cell {
+    transition: all 0.15s ease;
+}
+
+.checkers-cell:hover {
+    filter: brightness(1.2);
+    transform: scale(1.05);
+}
+
+/* Анимация для кнопок действий */
+.action-buttons button {
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.action-buttons button:active {
+    transform: scale(0.95);
+    transition: all 0.05s ease;
+}
+/* ========== ОТКЛЮЧЕНИЕ АНИМАЦИЙ ДЛЯ ШАШЕК ========== */
+.checkers-board,
+.checkers-cell,
+.checkers-board *,
+.checkers-cell * {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+}
+
+.checkers-cell:hover {
+    transform: none !important;
+    filter: brightness(1.1);
+}
+
+/* Убираем анимацию появления для клеток шашек */
+@keyframes none {
+    0%, 100% { opacity: 1; transform: none; }
+}
+
+.checkers-cell {
+    animation: none !important;
+}
+
+/* Отключаем анимацию для игровой области в шашках */
+.checkers-board {
+    animation: none !important;
+}
+/* ========== ОТКЛЮЧЕНИЕ АНИМАЦИЙ ДЛЯ ДУРАКА ========== */
+#gameWidget .cards-area,
+#gameWidget .card,
+#gameWidget .trump-card {
+    animation: none !important;
+    transition: none !important;
+}
+
+#gameWidget .card:hover {
+    transform: none !important;
+    transition: none !important;
+}
+
+/* Отключаем анимацию для кнопок в дураке */
+#takeBtn, #finishDefenseBtn {
+    transition: none !important;
+}
+
+#takeBtn:hover, #finishDefenseBtn:hover {
+    transform: none !important;
+}
+
+/* Отключаем анимацию для игрового статуса в дураке */
+.game-status {
+    transition: none !important;
+}
+
+/* ========== ОТКЛЮЧЕНИЕ ВСЕХ АНИМАЦИЙ ДЛЯ КАРТ В ДУРАКЕ ========== */
+.game-area .cards-area,
+.game-area .cards-area * {
+    animation: none !important;
+    transition: none !important;
+}
+
+.game-area .card {
+    animation: none !important;
+    transition: none !important;
+}
+
+.game-area .card:active {
+    transform: none !important;
+    transition: none !important;
+}
+
+/* Отключаем анимацию для кнопок БИТО и ВЗЯТЬ */
+.game-area .danger-btn,
+.game-area .success-btn {
+    transition: none !important;
+}
+
+.game-area .danger-btn:hover,
+.game-area .success-btn:hover {
+    transform: none !important;
+    transition: none !important;
+}

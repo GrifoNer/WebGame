@@ -7,6 +7,7 @@ function initCheckers() {
     let waitingForAI = false;
     let forceContinueCapture = false;
     let continuingPiece = null;
+    let initialRender = true;
 
     for(let row = 0; row < 8; row++) {
         for(let col = 0; col < 8; col++) {
@@ -204,7 +205,8 @@ function initCheckers() {
         if(winner === 'white') {
             winMinigame(lastCaptureType, 2);
         } else if(winner === 'black') {
-            document.getElementById("checkersMsg").innerHTML = "❌ Вы проиграли! Перезапуск...";
+            const msgDiv = document.getElementById("checkersMsg");
+            if(msgDiv) msgDiv.innerHTML = "❌ Вы проиграли! Перезапуск...";
             setTimeout(() => initCheckers(), 2000);
         }
     }
@@ -215,8 +217,9 @@ function initCheckers() {
         
         if(forceContinueCapture) {
             if(continuingPiece && (continuingPiece.row !== fromRow || continuingPiece.col !== fromCol)) {
-                document.getElementById("checkersMsg").innerHTML = "⚠️ Вы должны продолжать ходить той же шашкой!";
-                setTimeout(() => { document.getElementById("checkersMsg").innerHTML = ""; }, 1000);
+                const msgDiv = document.getElementById("checkersMsg");
+                if(msgDiv) msgDiv.innerHTML = "⚠️ Вы должны продолжать ходить той же шашкой!";
+                setTimeout(() => { if(msgDiv) msgDiv.innerHTML = ""; }, 1000);
                 return false;
             }
         }
@@ -245,8 +248,9 @@ function initCheckers() {
             continuingPiece = { row: toRow, col: toCol };
             selectedRow = toRow;
             selectedCol = toCol;
-            document.getElementById("checkersMsg").innerHTML = "🔥 Продолжайте взятие той же шашкой!";
-            setTimeout(() => { document.getElementById("checkersMsg").innerHTML = ""; }, 1500);
+            const msgDiv = document.getElementById("checkersMsg");
+            if(msgDiv) msgDiv.innerHTML = "🔥 Продолжайте взятие той же шашкой!";
+            setTimeout(() => { if(msgDiv) msgDiv.innerHTML = ""; }, 1500);
             renderBoard();
             return true;
         }
@@ -386,7 +390,7 @@ function initCheckers() {
 
     function renderBoard() {
         let html = '<div class="game-status">🌀 ШАШКИ | Вы играете за ⚪ белых</div>';
-        html += '<div class="checkers-board">';
+        html += '<div class="checkers-board" style="animation: none;">';
         for(let row = 0; row < 8; row++) {
             for(let col = 0; col < 8; col++) {
                 const cell = board[row][col];
@@ -397,7 +401,7 @@ function initCheckers() {
                     if(cell.type === 'white') pieceHtml = cell.king ? '👑' : '⚪';
                     else pieceHtml = cell.king ? '👑' : '⚫';
                 }
-                html += `<div class="checkers-cell ${isDark ? 'dark' : ''} ${isSelected ? 'selected' : ''}" data-row="${row}" data-col="${col}">${pieceHtml}</div>`;
+                html += `<div class="checkers-cell ${isDark ? 'dark' : ''} ${isSelected ? 'selected' : ''}" data-row="${row}" data-col="${col}" style="transition: none; animation: none;">${pieceHtml}</div>`;
             }
         }
         html += '</div><div id="checkersMsg" style="text-align:center; margin-top:10px; color:#ffaa77;"></div>';
@@ -451,8 +455,9 @@ function initCheckers() {
                         selectedRow = row;
                         selectedCol = col;
                     } else {
-                        document.getElementById("checkersMsg").innerHTML = "⚠️ Вы обязаны атаковать!";
-                        setTimeout(() => { document.getElementById("checkersMsg").innerHTML = ""; }, 1000);
+                        const msgDiv = document.getElementById("checkersMsg");
+                        if(msgDiv) msgDiv.innerHTML = "⚠️ Вы обязаны атаковать!";
+                        setTimeout(() => { if(msgDiv) msgDiv.innerHTML = ""; }, 1000);
                     }
                 } else {
                     selectedRow = row;

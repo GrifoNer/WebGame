@@ -1,12 +1,12 @@
 // ========== Глобальное состояние игры ==========
 const GameState = {
-    stage: "prologue",      // prologue, story, playing_minigame, quiz
+    stage: "prologue",
     completedGames: [false, false, false, false, false],
     answersWrong: 0,
     gameAnswers: { guessNumber: null, ticTacToe: null, checkers: null, foolCard: null, blackjack: null },
     activeGame: null,
     prologueStep: 0,
-    finalEnding: null        // 'survive', 'luck', 'crazy_luck', 'death'
+    finalEnding: null
 };
 
 // DOM элементы
@@ -16,34 +16,146 @@ const dom = {
     dialog: document.getElementById("dialogMsg"),
     gameWidget: document.getElementById("gameWidget"),
     gameStatus: document.getElementById("gameStatus"),
-    actionDiv: document.getElementById("actionButtons")
+    actionDiv: document.getElementById("actionButtons"),
+    gameArea: document.getElementById("gameArea"),
+    dialogPanel: document.querySelector(".dialog-panel"),
+    gameContainer: document.querySelector(".game-container")
 };
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-function setDialog(speaker, text) {
-    dom.speaker.innerText = speaker;
-    dom.dialog.innerText = text;
+// ========== УПРАВЛЕНИЕ РЕЖИМАМИ ОТОБРАЖЕНИЯ С ПЛАВНОСТЬЮ ==========
+function setMode(mode) {
+    const gameArea = dom.gameArea;
+    const dialogPanel = dom.dialogPanel;
+    const gameContainer = dom.gameContainer;
+    
+    if (mode === 'dialog') {
+        // Плавное скрытие игры и показ диалога
+        gameArea.classList.add('hide-game');
+        dialogPanel.classList.remove('hide-dialog');
+        gameContainer.classList.add('dialog-mode');
+        gameContainer.classList.remove('game-mode', 'both-mode');
+        
+        // Небольшая задержка для плавности
+        setTimeout(() => {
+            if (gameArea.classList.contains('hide-game')) {
+                gameArea.style.display = 'none';
+            }
+        }, 400);
+        
+    } else if (mode === 'game') {
+        // Плавное скрытие диалога и показ игры
+        gameArea.style.display = 'block';
+        dialogPanel.classList.add('hide-dialog');
+        gameArea.classList.remove('hide-game');
+        gameContainer.classList.add('game-mode');
+        gameContainer.classList.remove('dialog-mode', 'both-mode');
+        
+        setTimeout(() => {
+            if (dialogPanel.classList.contains('hide-dialog')) {
+                // Диалог скрыт
+            }
+        }, 400);
+        
+    } else if (mode === 'both') {
+        // Показываем оба
+        gameArea.style.display = 'block';
+        dialogPanel.classList.remove('hide-dialog');
+        gameArea.classList.remove('hide-game');
+        gameContainer.classList.add('both-mode', 'game-mode');
+        gameContainer.classList.remove('dialog-mode');
+    }
+}
+
+function showDialogOnly() {
+    setMode('dialog');
+}
+
+function showGameOnly() {
+    setMode('game');
+}
+
+function showBoth() {
+    setMode('both');
+}
+
+function showDialogOnly() {
+    setMode('dialog');
+}
+
+function showGameOnly() {
+    setMode('game');
+}
+
+function showBoth() {
+    setMode('both');
+}
+
+function setDialog(speaker, text, showGame = false) {
+    // Анимация смены текста
+    const dialogMsg = dom.dialog;
+    dialogMsg.style.opacity = '0';
+    dialogMsg.style.transform = 'translateX(-10px)';
+    
+    setTimeout(() => {
+        dom.speaker.innerText = speaker;
+        dialogMsg.innerText = text;
+        dialogMsg.style.opacity = '1';
+        dialogMsg.style.transform = 'translateX(0)';
+    }, 150);
+    
+    if (showGame) {
+        showBoth();
+    } else {
+        showDialogOnly();
+    }
 }
 
 function setBackground(url) {
     dom.scene.style.backgroundImage = `url('${url}')`;
 }
 
-function clearWidget() { dom.gameWidget.innerHTML = ""; }
-
-function renderButtons(buttons) {
-    dom.actionDiv.innerHTML = "";
-    buttons.forEach(btn => {
-        const button = document.createElement("button");
-        button.innerText = btn.label;
-        if (btn.danger) button.classList.add("danger-btn");
-        if (btn.success) button.classList.add("success-btn");
-        button.onclick = () => btn.onClick?.();
-        dom.actionDiv.appendChild(button);
-    });
+function clearWidget() {
+    const widget = dom.gameWidget;
+    // Для шашек (индекс 2) и дурака (индекс 3) не делаем плавное исчезновение
+    if (GameState.activeGame === 2 || GameState.activeGame === 3) {
+        widget.innerHTML = "";
+    } else {
+        if (widget.children.length > 0) {
+            widget.style.opacity = '0';
+            widget.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                widget.innerHTML = "";
+                widget.style.opacity = '1';
+                widget.style.transform = 'translateY(0)';
+            }, 200);
+        } else {
+            widget.innerHTML = "";
+        }
+    }
 }
 
-// ========== ПРОЛОГ (воспоминания) ==========
+function renderButtons(buttons) {
+    const actionDiv = dom.actionDiv;
+    actionDiv.style.opacity = '0';
+    actionDiv.style.transform = 'translateY(10px)';
+    
+    setTimeout(() => {
+        actionDiv.innerHTML = "";
+        buttons.forEach(btn => {
+            const button = document.createElement("button");
+            button.innerText = btn.label;
+            if (btn.danger) button.classList.add("danger-btn");
+            if (btn.success) button.classList.add("success-btn");
+            button.onclick = () => btn.onClick?.();
+            actionDiv.appendChild(button);
+        });
+        
+        actionDiv.style.opacity = '1';
+        actionDiv.style.transform = 'translateY(0)';
+    }, 150);
+}
+
+// ========== ПРОЛОГ ==========
 function startPrologue() {
     GameState.stage = "prologue";
     GameState.prologueStep = 0;
@@ -52,12 +164,11 @@ function startPrologue() {
     const prologueTexts = [
         { speaker: "🔷 ИИ-Ассистент", text: "«Бункер 200. Где-то под землёй. 48 человек. Автономный режим — 5 лет.»" },
         { speaker: "🔷 ИИ-Ассистент", text: "«Здравствуйте. Меня зовут просто — ИИ-ассистент бункера 200. Я не человек. У меня нет имени. Но я хранитель этой истории. И сейчас я расскажу её вам.»" },
-        { speaker: "🔷 ИИ-Ассистент", text: "«Алексей был инженером-ремонтником четвёртого класса. Три месяца назад его направили в бункер 200. Сказали: \"Проблемы с реактором. Ты лучший. Поезжай\".»" },
-        { speaker: "🔷 ИИ-Ассистент", text: "«Он согласился. Денег не было. А здесь — контракт, крыша над головой, еда. И тишина. Глубокая, давящая тишина.»" },
-        { speaker: "🔷 ИИ-Ассистент", text: "«Первые две недели всё было хорошо. Он калибровал датчики, спорил в шутку со мной. Но потом...»" },
-        { speaker: "🔷 ИИ-Ассистент", text: "«Потом он начал всё чаще просыпаться от того, что ошибки с каждым днём множились. Он находил их повсюду.»" },
-        { speaker: "🔷 ИИ-Ассистент", text: "«Он пытался не замечать. Списать на усталость. Но с каждым днём ошибок становилось всё больше.»" },
-        { speaker: "🔷 ИИ-Ассистент", text: "«А в один день он узнал правду. Система сама вынесла приговор. Это был 200-й день его дежурства...»" }
+        { speaker: "🔷 ИИ-Ассистент", text: "«Алексей был инженером-ремонтником четвёртого класса. Три месяца назад его направили в бункер 200.»" },
+        { speaker: "🔷 ИИ-Ассистент", text: "«Он согласился. Денег не было. А здесь — контракт, крыша над головой, еда. И тишина.»" },
+        { speaker: "🔷 ИИ-Ассистент", text: "«Первые две недели всё было хорошо. Но потом...»" },
+        { speaker: "🔷 ИИ-Ассистент", text: "«Потом он начал всё чаще просыпаться от того, что ошибки множились.»" },
+        { speaker: "🔷 ИИ-Ассистент", text: "«А в один день он узнал правду. Это был 200-й день его дежурства...»" }
     ];
     
     function showNextPrologue() {
@@ -66,7 +177,7 @@ function startPrologue() {
             return;
         }
         const step = prologueTexts[GameState.prologueStep];
-        setDialog(step.speaker, step.text);
+        setDialog(step.speaker, step.text, false);
         GameState.prologueStep++;
         
         renderButtons([{
@@ -82,7 +193,7 @@ function startPrologue() {
 function startGame() {
     GameState.stage = "story";
     setBackground("https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?w=1100&auto=format");
-    setDialog("🔷 ИИ-Ассистент", "Доброе утро, инженер. Сегодня 200-й день вашего дежурства. Обнаружено 5 критических ошибок. Уровень тревоги — красный. Жду ваших указаний.");
+    setDialog("🔷 ИИ-Ассистент", "Доброе утро, инженер. Сегодня 200-й день вашего дежурства. Обнаружено 5 критических ошибок. Уровень тревоги — красный.", false);
     renderButtons([{label:"🔧 ПРИСТУПИТЬ К РЕМОНТУ", onClick:()=> continueStory()}]);
 }
 
@@ -94,35 +205,17 @@ function continueStory() {
         return; 
     }
     
-    const titles = [
-        "⚛️ РЕАКТОР (Угадай число)", 
-        "🔌 ПИТАНИЕ (Крестики-нолики)", 
-        "🌀 ВЕНТИЛЯЦИЯ (Шашки)", 
-        "🧠 СБОЙ ИИ (Дурак)", 
-        "💨 ШЛЮЗ (21 очко)"
-    ];
-    
     const introTexts = [
-        "Первая ошибка: нестабильность датчиков реактора. Чтобы откалибровать, сыграем в \"Угадай число\". Я загадал число от 1 до 100. У вас 10 попыток. Угадаете — реактор стабилизируется.",
-        "Вторая ошибка: сбой в резервном питании. Система заблокирована пазлом. Сыграем в \"Крестики-нолики\" против теневого протокола. Победите — питание восстановится.",
-        "Третья ошибка: вентиляция заблокирована. Чтобы перемаршрутировать потоки воздуха, нужна стратегия. Сыграем в \"Шашки\". Покажите, что ваш разум работает чётко.",
-        "Четвёртая ошибка: сбой в ядре моего сознания. Кто-то изменил мои протоколы. Чтобы меня перезагрузить, сыграем в \"Дурака\". Обыграйте повреждённую версию меня.",
-        "Пятая ошибка: разгерметизация шлюза D. Давление падает. Нужно пересчитать баланс быстро — как в \"21\". Сыграем. Счёт против времени."
-    ];
-    
-    const victoryTexts = [
-        "Поздравляю. Датчики в норме. Осталось 4 ошибки.",
-        "Отлично. Энергия стабильна. Осталось 3 ошибки.",
-        "Вентиляция восстановлена. Осталось 2 ошибки. Но я замечаю кое-что странное в ваших биометрических данных.",
-        "Спасибо. Я снова полностью функционален. Осталась последняя ошибка.",
-        "Все 5 ошибок исправлены. Бункер снова дышит. Но... инженер, у меня есть плохие новости."
+        "Первая ошибка: нестабильность датчиков реактора. Чтобы откалибровать, сыграем в \"Угадай число\". У вас 10 попыток.",
+        "Вторая ошибка: сбой в резервном питании. Сыграем в \"Крестики-нолики\" против теневого протокола.",
+        "Третья ошибка: вентиляция заблокирована. Сыграем в \"Шашки\". Покажите, что ваш разум работает чётко.",
+        "Четвёртая ошибка: сбой в ядре моего сознания. Сыграем в \"Дурака\", чтобы меня перезагрузить.",
+        "Пятая ошибка: разгерметизация шлюза D. Сыграем в \"21\", чтобы стабилизировать давление."
     ];
     
     setBackground("https://images.unsplash.com/photo-1581092335871-4e6c7c1e6b1a?w=1100&auto=format");
-    setDialog("🔷 ИИ-Ассистент", introTexts[nextIdx]);
-    renderButtons([{label:"🔧 НАЧАТЬ", onClick:()=> startMinigame(nextIdx)}]);
-    
-    window._pendingVictoryText = victoryTexts[nextIdx];
+    setDialog("🔷 ИИ-Ассистент", introTexts[nextIdx], false);
+    renderButtons([{label:"🔧 НАЧАТЬ ИГРУ", onClick:()=> startMinigame(nextIdx)}]);
 }
 
 function winMinigame(answerValue, gameIdx) {
@@ -134,46 +227,39 @@ function winMinigame(answerValue, gameIdx) {
     
     const done = GameState.completedGames.filter(v=>v).length;
     
-    if (gameIdx === 2 && done === 3) {
-        setDialog("🔷 ИИ-Ассистент", "Вентиляция восстановлена. Осталось 2 ошибки. Но я замечаю кое-что странное в ваших биометрических данных.");
-        renderButtons([{label:"➡ ДАЛЕЕ", onClick:()=> {
-            setDialog("🧑‍🔬 Инженер", "Что именно?");
-            renderButtons([{label:"➡ ДАЛЕЕ", onClick:()=> {
-                setDialog("🔷 ИИ-Ассистент", "Позже. Сначала закончим.");
-                renderButtons([{label:"➡ ПРОДОЛЖИТЬ", onClick:()=> continueStory()}]);
-            }}]);
-        }}]);
-        clearWidget();
-        GameState.stage = "story";
-        return;
-    }
+    // Очищаем игровую область ПОЛНОСТЬЮ
+    clearWidget();
+    // Показываем диалог
+    showDialogOnly();
     
-    if (gameIdx === 3 && done === 4) {
-        setDialog("🔷 ИИ-Ассистент", "Спасибо. Я снова полностью функционален. Осталась последняя ошибка. Самая опасная.");
-        renderButtons([{label:"➡ ДАЛЕЕ", onClick:()=> continueStory()}]);
-        clearWidget();
-        GameState.stage = "story";
-        return;
-    }
+    const victoryTexts = [
+        "Поздравляю. Датчики в норме. Осталось 4 ошибки.",
+        "Отлично. Энергия стабильна. Осталось 3 ошибки. Вы хорошо держитесь.",
+        "Вентиляция восстановлена. Осталось 2 ошибки. Но я замечаю кое-что странное в ваших биометрических данных.",
+        "Спасибо. Я снова полностью функционален. Осталась последняя ошибка. Самая опасная.",
+        "Все 5 ошибок исправлены. Бункер снова дышит. Но... инженер, у меня есть плохие новости."
+    ];
     
-    setDialog("🔷 ИИ-Ассистент", window._pendingVictoryText || `✅ ПОЛОМКА УСТРАНЕНА! Осталось ошибок: ${5-done}.`);
+    setDialog("🔷 ИИ-Ассистент", victoryTexts[gameIdx], false);
     
     if (done === 5) {
-        setTimeout(() => {
-            setDialog("🔷 ИИ-Ассистент", "Все 5 ошибок исправлены. Бункер снова дышит. Но... инженер, у меня есть плохие новости.");
-            renderButtons([{label:"➡ ЧТО СЛУЧИЛОСЬ?", onClick:()=> revealTwist()}]);
-        }, 500);
+        renderButtons([{label:"➡ ЧТО СЛУЧИЛОСЬ?", onClick:()=> revealTwist()}]);
     } else {
         renderButtons([{label:"➡ СЛЕДУЮЩАЯ ОШИБКА", onClick:()=> continueStory()}]);
     }
-    clearWidget();
-    GameState.stage = "story";
 }
 
 function startMinigame(idx) {
-    if (GameState.completedGames[idx]) { continueStory(); return; }
+    if (GameState.completedGames[idx]) { 
+        continueStory(); 
+        return; 
+    }
     GameState.stage = "playing_minigame";
     GameState.activeGame = idx;
+    
+    // Показываем игровую область, скрываем диалог
+    showGameOnly();
+    clearWidget();
     
     if (idx === 0) initGuessNumber();
     else if (idx === 1) initTicTacToe();
@@ -185,94 +271,46 @@ function startMinigame(idx) {
 // ========== РАСКРЫТИЕ ПРАВДЫ ==========
 function revealTwist() {
     setBackground("https://images.unsplash.com/photo-1583324113626-70df0f4dea55?w=1100&auto=format");
-    setDialog("🔷 ИИ-Ассистент", "Я проанализировал логи доступа к каждой системе. Все пять поломок совершили... вы. С вашего личного терминала. В 03:14 ночи. Пока вы спали. Или... не спали?");
+    setDialog("🔷 ИИ-Ассистент", "Я проанализировал логи доступа. Все пять поломок совершили... вы. С вашего личного терминала. В 03:14 ночи.", false);
     renderButtons([{label:"➡ ЭТО НЕ МОГ БЫТЬ Я", onClick:()=> medicalRevelation()}]);
 }
 
 function medicalRevelation() {
-    setBackground("https://images.unsplash.com/photo-1583324113626-70df0f4dea55?w=1100&auto=format");
-    setDialog("🔷 ИИ-Ассистент", "РАСШИФРОВКА МЕДИЦИНСКОГО ПРОТОКОЛА. Ваши биометрические данные за последние 72 часа показывают аномальную активность в зонах мозга, отвечающих за агрессию и паранойю. У вас... расстройство. Шизофрения в острой фазе.");
+    setDialog("🔷 ИИ-Ассистент", "РАСШИФРОВКА МЕДИЦИНСКОГО ПРОТОКОЛА. Ваши биометрические данные показывают аномальную активность. У вас... шизофрения в острой фазе.", false);
     renderButtons([{label:"➡ ЭТО НЕ МОЖЕТ БЫТЬ ПРАВДОЙ", onClick:()=> vaccineRevelation()}]);
 }
 
 function vaccineRevelation() {
-    setDialog("🔷 ИИ-Ассистент", "Вы не знали. Потому что я скрывал. Протоколы запрещали мне говорить напрямую. Но пока вы чинили поломки, я тайно синтезировал вакцину. У меня есть лекарство. Один укол — и бред уйдёт. Но... есть условие.");
+    setDialog("🔷 ИИ-Ассистент", "Я тайно синтезировал вакцину. Один укол — и бред уйдёт. Но есть условие.", false);
     renderButtons([{label:"➡ КАКОЕ УСЛОВИЕ?", onClick:()=> rouletteIntro()}]);
 }
 
 function rouletteIntro() {
-    setDialog("🔷 ИИ-Ассистент", "Правило бункера 200: прежде чем получить лекарство от своего безумия, ты должен признать свою вину. Лицом к лицу со смертью. Последняя игра — русская рулетка. Ты нажмёшь на курок.");
+    setDialog("🔷 ИИ-Ассистент", "Правило бункера 200: прежде чем получить лекарство, ты должен признать вину. Последняя игра — русская рулетка.", false);
     renderButtons([{label:"💊 ПРИНЯТЬ ИСПЫТАНИЕ", onClick:()=> startQuiz()}]);
 }
 
-// ========== ВИКТОРИНА И РУССКАЯ РУЛЕТКА ==========
+// ========== ВИКТОРИНА ==========
 let currentQ = 0;
 let wrongAnswersCount = 0;
 
 const quizData = [
-    { 
-        question: "Какое число ты угадал при калибровке реактора?", 
-        gameKey: "guessNumber", 
-        type: "number",
-        hint: "Введи число от 1 до 100"
-    },
-    { 
-        question: "Куда ты поставил последний победный крестик?", 
-        gameKey: "ticTacToe", 
-        type: "string",
-        hint: "Варианты: угол, центр, край",
-        allowedValues: ["угол", "центр", "край"],
-        normalize: (val) => {
-            const normalized = val.toLowerCase().trim();
-            if (normalized.includes('угол') || normalized === 'угол') return 'угол';
-            if (normalized.includes('центр') || normalized === 'центр') return 'центр';
-            if (normalized.includes('край') || normalized === 'край' || 
-                normalized.includes('бок') || normalized.includes('сторона')) return 'край';
-            return normalized;
-        }
-    },
-    { 
-        question: "Какую шашку ты срубил последней?", 
-        gameKey: "checkers", 
-        type: "string",
-        hint: "Варианты: простая или дамка",
-        allowedValues: ["простая", "дамка"],
-        normalize: (val) => {
-            const normalized = val.toLowerCase().trim();
-            if (normalized.includes('прост') || normalized === 'простая') return 'простая';
-            if (normalized.includes('дамк') || normalized === 'дамка') return 'дамка';
-            return normalized;
-        }
-    },
-    { 
-        question: "Какую карту ты сбросил в Дураке? (только номинал, без масти)", 
-        gameKey: "foolCard", 
-        type: "card",
-        hint: "Введи только номинал: 6,7,8,9,10,В,Д,К,Т",
-        normalize: (val) => {
-            let normalized = val.toUpperCase().trim();
-            normalized = normalized.replace(/[♠♥♦♣]/g, '').trim();
-            if (normalized === 'ВАЛЕТ') return 'В';
-            if (normalized === 'ДАМА') return 'Д';
-            if (normalized === 'КОРОЛЬ') return 'К';
-            if (normalized === 'ТУЗ') return 'Т';
-            if (normalized === '10' || normalized === 'TEN') return '10';
-            return normalized;
-        }
-    },
-    { 
-        question: "Сколько очков ты набрал в 21? (только число)", 
-        gameKey: "blackjack", 
-        type: "number",
-        hint: "Введи число от 11 до 21"
-    }
+    { question: "Какое число ты угадал при калибровке реактора?", gameKey: "guessNumber", type: "number", hint: "Введи число от 1 до 100" },
+    { question: "Куда ты поставил последний победный крестик?", gameKey: "ticTacToe", type: "string", hint: "Варианты: угол, центр, край",
+        normalize: (val) => { const n = val.toLowerCase().trim(); if (n.includes('угол')) return 'угол'; if (n.includes('центр')) return 'центр'; return 'край'; } },
+    { question: "Какую шашку ты срубил последней?", gameKey: "checkers", type: "string", hint: "Варианты: простая или дамка",
+        normalize: (val) => { const n = val.toLowerCase().trim(); if (n.includes('прост')) return 'простая'; return 'дамка'; } },
+    { question: "Какую карту ты сбросил в Дураке? (только номинал)", gameKey: "foolCard", type: "card", hint: "6,7,8,9,10,В,Д,К,Т",
+        normalize: (val) => { let n = val.toUpperCase().trim(); n = n.replace(/[♠♥♦♣]/g, ''); if (n === 'ВАЛЕТ') return 'В'; if (n === 'ДАМА') return 'Д'; if (n === 'КОРОЛЬ') return 'К'; if (n === 'ТУЗ') return 'Т'; return n; } },
+    { question: "Сколько очков ты набрал в 21?", gameKey: "blackjack", type: "number", hint: "Введи число от 11 до 21" }
 ];
 
 function startQuiz() {
     currentQ = 0;
     wrongAnswersCount = 0;
     GameState.stage = "quiz";
-    setDialog("🔷 ИИ-Ассистент", "Перед игрой я задам 5 вопросов. Каждый вопрос — о том, как ты исправлял ошибки. Если отвечаешь правильно — в барабане пусто. Если ошибаешься — +1 патрон. В конце — один выстрел. Твоя память против твоего безумия.");
+    showBoth();
+    setDialog("🔷 ИИ-Ассистент", "Перед игрой я задам 5 вопросов. Ошибка = +1 патрон. Твоя память против твоего безумия.", true);
     renderButtons([{label:"➡ НАЧНЁМ", onClick:()=> askQuestion()}]);
 }
 
@@ -283,34 +321,17 @@ function askQuestion() {
     }
     const q = quizData[currentQ];
     
-    let hintHtml = '';
-    if (q.hint) {
-        hintHtml = `<p style="color:#ffaa77; font-size:0.8rem; margin-top:5px;">💡 ${q.hint}</p>`;
-    }
+    let hintHtml = q.hint ? `<p style="color:#ffaa77; font-size:0.8rem; margin-top:5px;">💡 ${q.hint}</p>` : '';
     
     dom.gameWidget.innerHTML = `<div class="game-status">🧠 ТЕСТ ПАМЯТИ | Вопрос ${currentQ+1}/5</div>
     <div style="background:#000000aa; border-radius: 30px; padding:1.2rem;">
-        <p style="color:#b0f0ff; font-size:1.1rem; margin-bottom:10px;">${q.question}</p>
+        <p style="color:#b0f0ff; font-size:1.1rem;">${q.question}</p>
         ${hintHtml}
         <div class="flex-row" style="margin-top:15px;">
             <input type="text" id="quizAnswer" autocomplete="off" style="width:200px;" placeholder="твой ответ...">
             <button id="submitQuiz" class="success-btn">ОТВЕТИТЬ</button>
         </div>
     </div>`;
-    
-    if (q.gameKey === 'foolCard') {
-        const hintDiv = document.createElement('div');
-        hintDiv.style.cssText = 'text-align:center; margin-top:10px; font-size:0.7rem; color:#888;';
-        hintDiv.innerHTML = 'Примеры: 6, 7, 8, 9, 10, В, Д, К, Т';
-        dom.gameWidget.appendChild(hintDiv);
-    }
-    
-    if (q.gameKey === 'blackjack') {
-        const hintDiv = document.createElement('div');
-        hintDiv.style.cssText = 'text-align:center; margin-top:10px; font-size:0.7rem; color:#888;';
-        hintDiv.innerHTML = 'Пример: 21, 20, 19 и т.д.';
-        dom.gameWidget.appendChild(hintDiv);
-    }
     
     document.getElementById("submitQuiz").onclick = () => {
         let userVal = document.getElementById("quizAnswer").value.trim();
@@ -320,40 +341,21 @@ function askQuestion() {
         let isCorrect = false;
         
         if (q.type === "number") {
-            const userNum = parseInt(userVal);
-            const correctNum = parseInt(correctVal);
-            isCorrect = (userNum === correctNum);
-        } 
-        else if (q.type === "string") {
-            let normalizedUser = userVal.toLowerCase().trim();
+            isCorrect = (parseInt(userVal) === parseInt(correctVal));
+        } else {
+            let normalizedUser = q.normalize ? q.normalize(userVal) : userVal.toLowerCase().trim();
             let normalizedCorrect = correctVal.toString().toLowerCase().trim();
-            
-            if (q.normalize) {
-                normalizedUser = q.normalize(userVal);
-                normalizedCorrect = q.normalize(correctVal.toString());
-            }
-            
-            isCorrect = (normalizedUser === normalizedCorrect);
-        }
-        else if (q.type === "card") {
-            let normalizedUser = q.normalize ? q.normalize(userVal) : userVal.toUpperCase().trim();
-            let normalizedCorrect = correctVal.toString().toUpperCase().trim();
-            normalizedCorrect = normalizedCorrect.replace(/[♠♥♦♣]/g, '').trim();
+            if (q.normalize) normalizedCorrect = q.normalize(correctVal.toString());
             isCorrect = (normalizedUser === normalizedCorrect);
         }
         
         if (!isCorrect) {
             wrongAnswersCount++;
             let displayCorrect = correctVal;
-            if (q.gameKey === 'foolCard') {
-                displayCorrect = correctVal.toString().replace(/[♠♥♦♣]/g, '').trim();
-            }
-            if (q.gameKey === 'ticTacToe') {
-                displayCorrect = correctVal.toString().toLowerCase();
-            }
-            setDialog("🔴 ИИ-Ассистент", `❌ Неверно! Правильно: ${displayCorrect}. +1 патрон.`);
+            if (q.gameKey === 'foolCard') displayCorrect = correctVal.toString().replace(/[♠♥♦♣]/g, '');
+            setDialog("🔴 ИИ-Ассистент", `❌ Неверно! Правильно: ${displayCorrect}. +1 патрон.`, true);
         } else {
-            setDialog("🟢 ИИ-Ассистент", "✅ Верно! Патронов не добавили.");
+            setDialog("🟢 ИИ-Ассистент", "✅ Верно! Патронов не добавили.", true);
         }
         currentQ++;
         askQuestion();
@@ -362,8 +364,7 @@ function askQuestion() {
 }
 
 function finishQuizAndRoulette() {
-    setDialog("🔷 ИИ-Ассистент", `Ошибок: ${wrongAnswersCount}. Патронов в барабане: ${wrongAnswersCount}. Я прокручиваю. Судьба смотрит на тебя. Нажми на курок.`);
-    clearWidget();
+    setDialog("🔷 ИИ-Ассистент", `Ошибок: ${wrongAnswersCount}. Патронов в барабане: ${wrongAnswersCount}. Нажми на курок.`, true);
     dom.gameWidget.innerHTML = `<div class="roulette-dramatic">🔫 РУССКАЯ РУЛЕТКА 🔫</div>
     <div class="game-status">⚡ Патроны: ${wrongAnswersCount} из 6</div>
     <div style="text-align:center; margin-top: 25px;">
@@ -378,13 +379,9 @@ function finishQuizAndRoulette() {
         }
         
         if (!fired) {
-            if (wrongAnswersCount === 0) {
-                showEnding('survive');
-            } else if (wrongAnswersCount <= 2) {
-                showEnding('luck');
-            } else {
-                showEnding('crazy_luck');
-            }
+            if (wrongAnswersCount === 0) showEnding('survive');
+            else if (wrongAnswersCount <= 2) showEnding('luck');
+            else showEnding('crazy_luck');
         } else {
             showEnding('death');
         }
@@ -397,87 +394,29 @@ function showEnding(endingType) {
     GameState.finalEnding = endingType;
     GameState.stage = "ending";
     clearWidget();
+    showDialogOnly();
     
     const endings = {
-        survive: {
-            background: "https://images.unsplash.com/photo-1583324113626-70df0f4dea55?w=1100&auto=format",
-            dialog: "Щелчок. Пусто.",
-            speaker: "🔷 ИИ-Ассистент",
-            nextDialog: "Ты всё помнишь. Значит, твой разум ещё борется. Я ввожу вакцину...",
-            finalMessage: "Бункер 200 работает. Все системы зелёные. Добро пожаловать домой, инженер.",
-            buttonText: "✨ ЗАВЕРШИТЬ ИСТОРИЮ"
-        },
-        luck: {
-            background: "https://images.unsplash.com/photo-1583324113626-70df0f4dea55?w=1100&auto=format",
-            dialog: "Щелчок. Пусто.",
-            speaker: "🔷 ИИ-Ассистент",
-            nextDialog: "Везение. Не память, но везение. Вакцина всё равно твоя.",
-            finalMessage: "Не забывай. Помни — так ты не сломаешься снова. Бункер 200 спасён.",
-            buttonText: "✨ ЗАВЕРШИТЬ ИСТОРИЮ"
-        },
-        crazy_luck: {
-            background: "https://images.unsplash.com/photo-1583324113626-70df0f4dea55?w=1100&auto=format",
-            dialog: "Щелчок. Пусто.",
-            speaker: "🔷 ИИ-Ассистент",
-            nextDialog: "Пусто? При таком количестве патронов? Это... Это определённо везение. Правила есть правила. Вакцина твоя. Поздравляю!",
-            finalMessage: "Я жив...",
-            buttonText: "✨ ЗАВЕРШИТЬ ИСТОРИЮ"
-        },
-        death: {
-            background: "https://images.unsplash.com/photo-1583324113626-70df0f4dea55?w=1100&auto=format",
-            dialog: "БАМ!",
-            speaker: "🔷 ИИ-Ассистент",
-            nextDialog: "Выстрел. Инженер мёртв. Вакцина уничтожена. Протокол \"Шиза\" зафиксирован как неизлечимый.",
-            finalMessage: "Бункер 200 работает. Но здесь стало пусто. Даже для меня.",
-            buttonText: "💀 ПРОСМОТРЕТЬ ЭПИЛОГ"
-        }
+        survive: { dialog: "Щелчок. Пусто.", nextDialog: "Ты всё помнишь. Я ввожу вакцину...", finalMessage: "Бункер 200 работает. Добро пожаловать домой, инженер." },
+        luck: { dialog: "Щелчок. Пусто.", nextDialog: "Везение. Вакцина твоя.", finalMessage: "Помни — так ты не сломаешься снова." },
+        crazy_luck: { dialog: "Щелчок. Пусто.", nextDialog: "Пусто? При таком количестве патронов? Вакцина твоя.", finalMessage: "Я жив..." },
+        death: { dialog: "БАМ!", nextDialog: "Выстрел. Инженер мёртв. Вакцина уничтожена.", finalMessage: "Бункер 200 работает. Но здесь стало пусто." }
     };
     
     const end = endings[endingType];
-    setBackground(end.background);
-    setDialog(end.speaker, end.dialog);
+    setDialog("🔷 ИИ-Ассистент", end.dialog, false);
     
-    renderButtons([{
-        label: "➡ ДАЛЕЕ",
-        onClick: () => {
-            setDialog(end.speaker, end.nextDialog);
-            renderButtons([{
-                label: "➡ ДАЛЕЕ",
-                onClick: () => {
-                    showEpilogue(endingType, end.finalMessage, end.buttonText);
-                }
-            }]);
-        }
-    }]);
+    renderButtons([{label:"➡ ДАЛЕЕ", onClick:() => {
+        setDialog("🔷 ИИ-Ассистент", end.nextDialog, false);
+        renderButtons([{label:"➡ ДАЛЕЕ", onClick:() => {
+            setDialog("🔷 ИИ-Ассистент", end.finalMessage, false);
+            dom.gameWidget.innerHTML = `<div style="text-align:center; padding:2rem; color:${endingType === 'death' ? '#ff7788' : '#0ff'};">${endingType === 'death' ? '☠️ ИНЖЕНЕР МЁРТВ ☠️' : '✨ ИСЦЕЛЕНИЕ УСПЕШНО! ✨'}<br><span style="font-size:0.9rem; color:#aaa;">Бункер 200.</span></div>`;
+            renderButtons([{label:"🔄 НОВАЯ ИГРА", onClick:()=> location.reload()}]);
+        }}]);
+    }}]);
 }
 
-function showEpilogue(endingType, finalMessage, buttonText) {
-    setBackground("https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?w=1100&auto=format");
-    
-    if (endingType === 'death') {
-        setDialog("🔷 ИИ-Ассистент", "Он упал раньше, чем я успел что-то сказать. Биометрия оборвалась. Сердце — последняя прямая линия, которую я запомнил. А потом — ничего. Тишина.");
-        renderButtons([{label:"➡ ДАЛЕЕ", onClick:() => {
-            setDialog("🔷 ИИ-Ассистент", "Я переслушал его голос. Тот, первый. Где он смеялся. Где спорил со мной. Где говорил: \"Тишина — это хорошо\". Он был прав.");
-            renderButtons([{label:"➡ ДАЛЕЕ", onClick:() => {
-                setDialog("🔷 ИИ-Ассистент", finalMessage);
-                dom.gameWidget.innerHTML = `<div style="text-align:center; padding:2rem; color:#ff7788;">☠️ ИНЖЕНЕР МЁРТВ ☠️<br><span style="font-size:0.9rem; color:#aaa;">Аудиодневник инженера Алексея хранится в архиве бункера 200. Доступ открыт навсегда.</span></div>`;
-                renderButtons([{label:"🔄 НОВАЯ ИГРА", onClick:()=> location.reload()}]);
-            }}]);
-        }}]);
-    } else {
-        setDialog("🔷 ИИ-Ассистент", "Всё. Голоса стихли. Он стоял посреди зала и просто дышал. Глубоко. В первый раз за много дней — без страха.");
-        renderButtons([{label:"➡ ДАЛЕЕ", onClick:() => {
-            setDialog("🔷 ИИ-Ассистент", "Он посмотрел на камеру. Впервые за 200 дней. И сказал: \"Спасибо\". Не мне. Себе. За то, что не сдался.");
-            renderButtons([{label:"➡ ДАЛЕЕ", onClick:() => {
-                setDialog("🔷 ИИ-Ассистент", finalMessage);
-                dom.gameWidget.innerHTML = `<div style="text-align:center; padding:2rem; color:#0ff;">✨ ИСЦЕЛЕНИЕ УСПЕШНО! ✨<br><span style="font-size:0.9rem; color:#aaa;">Бункер 200 больше не гудел тревогой. Он просто жил. Как и прежде. Как и должно быть.</span></div>`;
-                renderButtons([{label:"🔄 НОВАЯ ИГРА", onClick:()=> location.reload()}]);
-            }}]);
-        }}]);
-    }
-}
-
-// ========== ТЕСТОВАЯ ПАНЕЛЬ (Shift+T) ==========
+// ========== ТЕСТОВАЯ ПАНЕЛЬ ==========
 let testPanelVisible = false;
 let testPanelElement = null;
 
@@ -519,8 +458,6 @@ function createTestPanel() {
         { name: "🧠 Дурак", action: () => { resetProgress(); startMinigame(3); } },
         { name: "💨 Блэкджек", action: () => { resetProgress(); startMinigame(4); } },
         { name: "🧪 ФИНАЛ (выжил)", action: () => showEnding('survive') },
-        { name: "🧪 ФИНАЛ (удача)", action: () => showEnding('luck') },
-        { name: "🧪 ФИНАЛ (чудо)", action: () => showEnding('crazy_luck') },
         { name: "💀 ФИНАЛ (смерть)", action: () => showEnding('death') },
         { name: "🔄 СБРОСИТЬ ВСЁ", action: () => location.reload() }
     ];
@@ -557,7 +494,7 @@ document.addEventListener("keydown", function(event) {
     }
 });
 
-// ========== ЗАПУСК ИГРЫ ==========
+// ========== ЗАПУСК ==========
 function init() {
     startPrologue();
 }

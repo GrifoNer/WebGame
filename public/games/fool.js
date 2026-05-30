@@ -1,4 +1,5 @@
 function initFool() {
+    // Колода 36 карт (6,7,8,9,10,В,Д,К,Т)
     const suits = ['♠', '♣', '♥', '♦'];
     const values = ['6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т'];
     const valueOrder = {'6':0, '7':1, '8':2, '9':3, '10':4, 'В':5, 'Д':6, 'К':7, 'Т':8};
@@ -10,14 +11,15 @@ function initFool() {
     let playerHand = [];
     let computerHand = [];
     
-    let attackCards = [];
-    let defenseCards = [];
-    let currentAttacker = 'player';
-    let roundActive = false;
+    let attackCards = [];      // Карты, которые сейчас атакуют
+    let defenseCards = [];     // Карты, которыми отбиваются (в паре с атакой)
+    let currentAttacker = 'player'; // Кто атакует в текущем раунде ('player' или 'computer')
+    let roundActive = false;    // Идет ли текущий раунд (есть атака)
     let gameActive = true;
-    let waitingForBit = false; // Флаг ожидания нажатия "БИТО"
-    let lastPlayedCardValue = null;
     
+    let lastPlayedCardValue = null;   // Для викторины (только номинал!)
+    
+    // Функция создания и перемешивания колоды
     function createDeck() {
         let newDeck = [];
         for(let suit of suits) {
@@ -92,49 +94,14 @@ function initFool() {
         sortPlayerHand(playerHand);
     }
     
-    function playerTakeCards() {
-        if(!gameActive) return;
-        if(!roundActive) return;
-        if(currentAttacker === 'player') return;
-        if(attackCards.length === 0) return;
-        if(waitingForBit) return;
-        
-        playerHand.push(...attackCards);
-        playerHand.push(...defenseCards);
+    function clearTable() {
         attackCards = [];
         defenseCards = [];
         roundActive = false;
-        waitingForBit = false;
-        sortPlayerHand(playerHand);
-        
-        drawCards(playerHand, 6 - playerHand.length);
-        drawCards(computerHand, 6 - computerHand.length);
-        
-        const gameEnded = checkGameOver();
-        
-        if(!gameEnded && gameActive) {
-            renderGame();
-            if(currentAttacker === 'computer' && computerHand.length > 0) {
-                setTimeout(() => computerTurn(), 500);
-            }
-        } else {
-            renderGame();
-        }
     }
     
-    // Функция "БИТО" - когда игрок или компьютер отбились и хотят закончить раунд
-    function playerFinishDefense() {
-        if(!gameActive) return;
-        if(!roundActive) return;
-        if(attackCards.length !== defenseCards.length) return;
-        if(attackCards.length === 0) return;
-        if(!waitingForBit) return;
-        
-        // Завершаем раунд - все карты уходят в бито
-        attackCards = [];
-        defenseCards = [];
-        roundActive = false;
-        waitingForBit = false;
+    function finishRound() {
+        clearTable();
         
         drawCards(playerHand, 6 - playerHand.length);
         drawCards(computerHand, 6 - computerHand.length);
@@ -142,7 +109,6 @@ function initFool() {
         const gameEnded = checkGameOver();
         
         if(!gameEnded && gameActive) {
-            // Меняем атакующего
             currentAttacker = (currentAttacker === 'player') ? 'computer' : 'player';
             renderGame();
             
@@ -152,6 +118,55 @@ function initFool() {
         } else {
             renderGame();
         }
+    }
+    
+    function playerTakeCards() {
+        if(!gameActive) return;
+        if(!roundActive) return;
+        if(currentAttacker === 'player') return;
+        if(attackCards.length === 0) return;
+        
+        playerHand.push(...attackCards);
+        playerHand.push(...defenseCards);
+        clearTable();
+        sortPlayerHand(playerHand);
+        
+        drawCards(playerHand, 6 - playerHand.length);
+        drawCards(computerHand, 6 - computerHand.length);
+        
+        const gameEnded = checkGameOver();
+        
+        if(!gameEnded && gameActive) {
+            renderGame();
+            
+            if(currentAttacker === 'computer' && computerHand.length > 0) {
+                setTimeout(() => computerTurn(), 500);
+            } else if(currentAttacker === 'player') {
+                renderGame();
+            }
+        } else {
+            renderGame();
+        }
+    }
+    
+    function playerFinishDefense() {
+        if(!gameActive) return;
+        if(!roundActive) return;
+        if(currentAttacker !== 'player') return;
+        if(attackCards.length !== defenseCards.length) return;
+        if(attackCards.length === 0) return;
+        
+        finishRound();
+    }
+    
+    function computerFinishDefense() {
+        if(!gameActive) return;
+        if(!roundActive) return;
+        if(currentAttacker !== 'computer') return;
+        if(attackCards.length !== defenseCards.length) return;
+        if(attackCards.length === 0) return;
+        
+        finishRound();
     }
     
     function checkGameOver() {
@@ -176,30 +191,28 @@ function initFool() {
     
     function computerTurn() {
         if(!gameActive) return;
-        if(waitingForBit) return;
         
-        // Компьютер защищается
         if(roundActive && currentAttacker === 'player' && attackCards.length > defenseCards.length) {
             computerDefense();
             return;
         }
         
-        // Компьютер атакует (начинает раунд)
         if(!roundActive && currentAttacker === 'computer') {
             computerAttack();
             return;
         }
         
-        // Компьютер подкидывает карты (когда он атакует и все отбито, но еще не нажато БИТО)
-        if(roundActive && currentAttacker === 'computer' && attackCards.length === defenseCards.length && attackCards.length > 0 && !waitingForBit) {
+        if(roundActive && currentAttacker === 'computer' && attackCards.length === defenseCards.length && attackCards.length > 0) {
             computerAddCard();
             return;
         }
         
-        // Компьютер нажимает "БИТО" (когда он отбился и не хочет/не может подкидывать)
-        if(roundActive && currentAttacker === 'computer' && attackCards.length === defenseCards.length && attackCards.length > 0 && waitingForBit) {
-            // Компьютер автоматически нажимает БИТО
-            computerFinishDefense();
+        if(roundActive && currentAttacker === 'computer' && attackCards.length === defenseCards.length && attackCards.length > 0) {
+            const allValues = [...attackCards, ...defenseCards].map(c => c.value);
+            const canAdd = computerHand.some(card => allValues.includes(card.value));
+            if(!canAdd) {
+                computerFinishDefense();
+            }
             return;
         }
     }
@@ -218,7 +231,6 @@ function initFool() {
         const index = computerHand.indexOf(bestCard);
         computerHand.splice(index, 1);
         roundActive = true;
-        waitingForBit = false;
         lastPlayedCardValue = bestCard.value;
         
         renderGame();
@@ -226,8 +238,7 @@ function initFool() {
     
     function computerAddCard() {
         if(computerHand.length === 0) {
-            waitingForBit = true;
-            renderGame();
+            computerFinishDefense();
             return;
         }
         
@@ -245,11 +256,9 @@ function initFool() {
             const index = computerHand.indexOf(cardToAdd);
             computerHand.splice(index, 1);
             lastPlayedCardValue = cardToAdd.value;
-            waitingForBit = false;
             renderGame();
         } else {
-            waitingForBit = true;
-            renderGame();
+            computerFinishDefense();
         }
     }
     
@@ -272,26 +281,12 @@ function initFool() {
             renderGame();
             
             if(attackCards.length === defenseCards.length) {
-                // Все отбито - теперь нужно решить, подкидывать или БИТО
-                const allValues = [...attackCards, ...defenseCards].map(c => c.value);
-                const canAdd = computerHand.some(card => allValues.includes(card.value));
-                if(!canAdd) {
-                    waitingForBit = true;
-                    renderGame();
-                    setTimeout(() => computerTurn(), 300);
-                } else {
-                    waitingForBit = false;
-                    setTimeout(() => computerTurn(), 300);
-                }
+                setTimeout(() => computerTurn(), 300);
             }
         } else {
-            // Компьютер не может отбиться - забирает карты
             computerHand.push(...attackCards);
             computerHand.push(...defenseCards);
-            attackCards = [];
-            defenseCards = [];
-            roundActive = false;
-            waitingForBit = false;
+            clearTable();
             
             drawCards(playerHand, 6 - playerHand.length);
             drawCards(computerHand, 6 - computerHand.length);
@@ -299,61 +294,31 @@ function initFool() {
             const gameEnded = checkGameOver();
             
             if(!gameEnded && gameActive) {
-                currentAttacker = 'computer';
                 renderGame();
-                setTimeout(() => computerTurn(), 500);
+                
+                if(currentAttacker === 'computer' && computerHand.length > 0) {
+                    setTimeout(() => computerTurn(), 500);
+                }
             } else {
                 renderGame();
             }
         }
     }
     
-    function computerFinishDefense() {
-        if(!gameActive) return;
-        if(!roundActive) return;
-        if(attackCards.length !== defenseCards.length) return;
-        if(attackCards.length === 0) return;
-        if(!waitingForBit) return;
-        
-        attackCards = [];
-        defenseCards = [];
-        roundActive = false;
-        waitingForBit = false;
-        
-        drawCards(playerHand, 6 - playerHand.length);
-        drawCards(computerHand, 6 - computerHand.length);
-        
-        const gameEnded = checkGameOver();
-        
-        if(!gameEnded && gameActive) {
-            currentAttacker = (currentAttacker === 'player') ? 'computer' : 'player';
-            renderGame();
-            
-            if(currentAttacker === 'computer' && computerHand.length > 0 && gameActive) {
-                setTimeout(() => computerTurn(), 500);
-            }
-        } else {
-            renderGame();
-        }
-    }
-    
     function playerAction(cardIndex) {
         if(!gameActive) return;
-        if(waitingForBit) return;
         
         const card = playerHand[cardIndex];
         if(!card) return;
         
-        // Случай 1: Игрок атакует (начало раунда или подкидывание)
         if((!roundActive && currentAttacker === 'player') || 
-           (roundActive && currentAttacker === 'player' && attackCards.length === defenseCards.length && attackCards.length > 0 && !waitingForBit)) {
+           (roundActive && currentAttacker === 'player' && attackCards.length === defenseCards.length && attackCards.length > 0)) {
             
             if(!roundActive) {
                 attackCards = [card];
                 playerHand.splice(cardIndex, 1);
                 roundActive = true;
                 currentAttacker = 'player';
-                waitingForBit = false;
                 lastPlayedCardValue = card.value;
                 sortPlayerHand(playerHand);
                 renderGame();
@@ -361,7 +326,7 @@ function initFool() {
                 return;
             }
             
-            if(roundActive && attackCards.length === defenseCards.length && !waitingForBit) {
+            if(roundActive && attackCards.length === defenseCards.length) {
                 const allValues = [...attackCards, ...defenseCards].map(c => c.value);
                 if(allValues.includes(card.value)) {
                     attackCards.push(card);
@@ -379,8 +344,7 @@ function initFool() {
             }
         }
         
-        // Случай 2: Игрок защищается (отбивается)
-        if(roundActive && currentAttacker !== 'player' && attackCards.length > defenseCards.length && !waitingForBit) {
+        if(roundActive && currentAttacker !== 'player' && attackCards.length > defenseCards.length) {
             const currentAttackCard = attackCards[defenseCards.length];
             
             if(canBeat(currentAttackCard, card)) {
@@ -391,8 +355,6 @@ function initFool() {
                 renderGame();
                 
                 if(attackCards.length === defenseCards.length) {
-                    // Все отбито - теперь нужно нажать БИТО
-                    waitingForBit = true;
                     renderGame();
                 } else {
                     setTimeout(() => computerTurn(), 300);
@@ -408,8 +370,9 @@ function initFool() {
     
     function renderGame() {
         const remainingCards = deck.length;
+        const trumpDisplay = trumpCard ? `${trumpCard.suit}${trumpCard.value}` : '?';
         
-        let html = `<div class="game-status">🃏 ДУРАК | Козырь: ${trumpSuit} | Колода: ${remainingCards} карт</div>`;
+        let html = `<div class="game-status">🃏 ДУРАК | Козырь: ${trumpSuit} (${trumpDisplay}) | Колода: ${remainingCards} карт</div>`;
         
         html += `<div style="margin-bottom: 20px; background:#0a1020; border-radius: 15px; padding: 10px;">`;
         html += `<strong style="color:#ffffff;">🤖 Противник:</strong> <span style="color:#ffffff;">${computerHand.length} карт</span>`;
@@ -424,28 +387,29 @@ function initFool() {
             html += `<div><span style="color:#66ff88;">🛡️ Защита:</span> <span style="color:#ffffff;">${defenseCards.map(c => c.full).join(' · ')}</span></div>`;
         }
         if(attackCards.length === 0) {
-            html += `<div style="text-align:center; color:#888;">⚡ Начните раунд</div>`;
+            html += `<div style="text-align:center; color:#888;">⚡ Начните раунд или дождитесь хода соперника</div>`;
         }
         html += `</div>`;
         
         html += `<div style="margin-top: 15px;"><strong style="color:#ffffff;">🎴 Твои карты (${playerHand.length}):</strong></div>`;
-        html += `<div class="cards-area" style="margin-bottom: 15px;">`;
+        html += `<div class="cards-area" style="margin-bottom: 15px; animation: none;">`;
         playerHand.forEach((card, idx) => {
             let cardClass = "card";
             if(card.suit === trumpSuit) cardClass += " trump-card";
-            html += `<div class="${cardClass}" data-card-idx="${idx}">${card.full}</div>`;
+            html += `<div class="${cardClass}" data-card-idx="${idx}" style="animation: none; transition: none;">${card.full}</div>`;
         });
         html += `</div>`;
         
-        // Кнопка "ВЗЯТЬ КАРТЫ"
-        if(roundActive && currentAttacker !== 'player' && attackCards.length > defenseCards.length && gameActive && !waitingForBit) {
+        if(roundActive && currentAttacker !== 'player' && attackCards.length > defenseCards.length && gameActive) {
             html += `<div class="flex-row" style="margin-top: 10px;"><button id="takeBtn" class="danger-btn" style="background:#a1222f;">📥 ВЗЯТЬ КАРТЫ</button></div>`;
         }
         
-        // Кнопка "БИТО" - появляется только когда все карты отбиты и нужно подтвердить
-        if(roundActive && attackCards.length === defenseCards.length && attackCards.length > 0 && gameActive && waitingForBit) {
-            html += `<div class="flex-row" style="margin-top: 10px;"><button id="finishDefenseBtn" class="success-btn" style="background:#0f4a3a;">✅ БИТО</button></div>`;
-            html += `<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ff88;">🎉 Вы отбились! Нажмите "БИТО" чтобы закончить ход</div>`;
+        if(roundActive && attackCards.length === defenseCards.length && attackCards.length > 0 && gameActive) {
+            if(currentAttacker === 'player') {
+                html += `<div class="flex-row" style="margin-top: 10px;"><button id="finishDefenseBtn" class="success-btn">✅ БИТО (закончить ход)</button></div>`;
+            } else {
+                html += `<div class="flex-row" style="margin-top: 10px;"><button id="finishDefenseBtn" class="success-btn">✅ БИТО (закончить раунд)</button></div>`;
+            }
         }
         
         html += `<div id="foolMsg" style="text-align:center; margin-top: 10px; color:#ffaa77;"></div>`;
@@ -453,12 +417,12 @@ function initFool() {
         if(gameActive) {
             if(!roundActive && currentAttacker === 'player') {
                 html += `<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ddff;">🎯 Ваш ход: нажмите на карту, чтобы атаковать</div>`;
-            } else if(roundActive && currentAttacker === 'player' && attackCards.length === defenseCards.length && !waitingForBit) {
-                html += `<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ddff;">📤 Подкиньте карту того же номинала</div>`;
-            } else if(roundActive && currentAttacker !== 'player' && attackCards.length > defenseCards.length && !waitingForBit) {
-                html += `<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ddff;">🛡️ Защититесь или возьмите карты</div>`;
-            } else if(roundActive && waitingForBit) {
-                html += `<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ff88;">✅ Нажмите "БИТО" для завершения хода</div>`;
+            } else if(roundActive && currentAttacker === 'player' && attackCards.length === defenseCards.length) {
+                html += `<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ddff;">📤 Подкиньте карту или нажмите "БИТО"</div>`;
+            } else if(roundActive && currentAttacker !== 'player' && attackCards.length > defenseCards.length) {
+                html += `<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ddff;">🛡️ Защититесь, возьмите карты или нажмите "БИТО" если отбились</div>`;
+            } else if(roundActive && currentAttacker !== 'player' && attackCards.length === defenseCards.length) {
+                html += `<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ddff;">⚡ Противник может подкинуть карту или нажать "БИТО"</div>`;
             }
         }
         
@@ -467,12 +431,6 @@ function initFool() {
         document.querySelectorAll('.card[data-card-idx]').forEach(cardDiv => {
             cardDiv.onclick = () => {
                 if(!gameActive) return;
-                if(waitingForBit) {
-                    const msgDiv = document.getElementById("foolMsg");
-                    if(msgDiv) msgDiv.innerHTML = "❌ Сначала нажмите 'БИТО'!";
-                    setTimeout(() => { if(msgDiv) msgDiv.innerHTML = ""; }, 1000);
-                    return;
-                }
                 const idx = parseInt(cardDiv.dataset.cardIdx);
                 playerAction(idx);
             };
@@ -482,7 +440,6 @@ function initFool() {
         if(takeBtn) {
             takeBtn.onclick = () => {
                 if(!gameActive) return;
-                if(waitingForBit) return;
                 playerTakeCards();
             };
         }
@@ -491,7 +448,13 @@ function initFool() {
         if(finishBtn) {
             finishBtn.onclick = () => {
                 if(!gameActive) return;
-                playerFinishDefense();
+                if(roundActive && attackCards.length === defenseCards.length && attackCards.length > 0) {
+                    if(currentAttacker === 'player') {
+                        playerFinishDefense();
+                    } else {
+                        computerFinishDefense();
+                    }
+                }
             };
         }
     }
@@ -505,8 +468,8 @@ function initFool() {
         defenseCards = [];
         roundActive = false;
         gameActive = true;
-        waitingForBit = false;
         currentAttacker = 'player';
+        lastPlayedCardValue = null;
         
         dealCards();
         sortPlayerHand(playerHand);
