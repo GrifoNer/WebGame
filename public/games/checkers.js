@@ -1,15 +1,13 @@
 function initCheckers() {
-    // 8x8 поле
     let board = Array(8).fill().map(() => Array(8).fill(null));
-    let currentPlayer = 'white'; // Белые (игрок) ходят первыми
+    let currentPlayer = 'white';
     let selectedRow = null, selectedCol = null;
-    let lastCaptureType = "простая шашка"; // Для викторины
+    let lastCaptureType = "простая шашка";
     let gameOver = false;
     let waitingForAI = false;
-    let forceContinueCapture = false; // Флаг принудительного продолжения взятия
-    let continuingPiece = null; // Шашка, которая должна продолжить взятие
+    let forceContinueCapture = false;
+    let continuingPiece = null;
 
-    // Инициализация фигур
     for(let row = 0; row < 8; row++) {
         for(let col = 0; col < 8; col++) {
             if((row + col) % 2 === 1) {
@@ -19,9 +17,6 @@ function initCheckers() {
         }
     }
 
-    // ================= ЛОГИКА ХОДОВ =================
-    
-    // Проверка, может ли шашка (или дамка) переместиться
     function isValidMove(piece, fromRow, fromCol, toRow, toCol, boardState, checkOnlyCapture = false) {
         const deltaRow = toRow - fromRow;
         const deltaCol = toCol - fromCol;
@@ -30,9 +25,6 @@ function initCheckers() {
         
         if (boardState[toRow][toCol] !== null) return false;
         
-        const direction = (piece.type === 'white') ? -1 : 1;
-        
-        // --- Логика ДАМКИ ---
         if (piece.king) {
             if (absDeltaRow !== absDeltaCol) return false;
             
@@ -60,7 +52,6 @@ function initCheckers() {
             return true;
         }
         
-        // --- Логика ОБЫЧНОЙ ШАШКИ ---
         if (!piece.king) {
             if (piece.type === 'white' && deltaRow > 0) return false;
             if (piece.type === 'black' && deltaRow < 0) return false;
@@ -84,7 +75,6 @@ function initCheckers() {
         return false;
     }
 
-    // Получение всех возможных ходов для определенного цвета
     function getAllMovesForColor(boardState, color, onlyCapture = false) {
         let moves = [];
         for(let row = 0; row < 8; row++) {
@@ -121,7 +111,6 @@ function initCheckers() {
         return moves;
     }
     
-    // Получение всех возможных взятий для конкретной шашки
     function getCaptureMovesForPiece(boardState, row, col) {
         const piece = boardState[row][col];
         if(!piece) return [];
@@ -151,7 +140,6 @@ function initCheckers() {
         return captures;
     }
     
-    // Выполнение хода
     function applyMove(boardState, from, to, piece) {
         const newBoard = copyBoard(boardState);
         const fromPiece = newBoard[from.row][from.col];
@@ -159,7 +147,6 @@ function initCheckers() {
         
         const deltaRow = Math.abs(to.row - from.row);
         
-        // Обработка съедания для обычной шашки
         if (!fromPiece.king && deltaRow === 2) {
             const midRow = (from.row + to.row) / 2;
             const midCol = (from.col + to.col) / 2;
@@ -169,7 +156,6 @@ function initCheckers() {
                 newBoard[midRow][midCol] = null;
             }
         }
-        // Обработка съедания для дамки
         else if (fromPiece.king && Math.abs(deltaRow) > 1) {
             const stepRow = (to.row > from.row) ? 1 : -1;
             const stepCol = (to.col > from.col) ? 1 : -1;
@@ -184,11 +170,9 @@ function initCheckers() {
             }
         }
         
-        // Перемещаем фигуру
         newBoard[to.row][to.col] = fromPiece;
         newBoard[from.row][from.col] = null;
         
-        // Превращение в дамку
         if((fromPiece.type === 'white' && to.row === 0) || (fromPiece.type === 'black' && to.row === 7)) {
             newBoard[to.row][to.col].king = true;
         }
@@ -202,7 +186,6 @@ function initCheckers() {
         );
     }
 
-    // ================= ЛОГИКА ПОБЕДЫ =================
     function checkWinner(boardState) {
         let whiteCount = 0, blackCount = 0;
         for(let r = 0; r < 8; r++) {
@@ -221,17 +204,15 @@ function initCheckers() {
         if(winner === 'white') {
             winMinigame(lastCaptureType, 2);
         } else if(winner === 'black') {
-            document.getElementById("checkersMsg").innerHTML = "❌ Вы проиграли! Шашки сломаны. Перезапуск...";
+            document.getElementById("checkersMsg").innerHTML = "❌ Вы проиграли! Перезапуск...";
             setTimeout(() => initCheckers(), 2000);
         }
     }
 
-    // ================= ХОД ИГРОКА =================
     function tryPlayerMove(fromRow, fromCol, toRow, toCol) {
         const piece = board[fromRow][fromCol];
         if(!piece || piece.type !== 'white') return false;
         
-        // Если мы в режиме принудительного продолжения взятия
         if(forceContinueCapture) {
             if(continuingPiece && (continuingPiece.row !== fromRow || continuingPiece.col !== fromCol)) {
                 document.getElementById("checkersMsg").innerHTML = "⚠️ Вы должны продолжать ходить той же шашкой!";
@@ -240,32 +221,26 @@ function initCheckers() {
             }
         }
         
-        // Проверяем, обязан ли игрок атаковать
         const allCaptureMoves = getAllMovesForColor(board, 'white', true);
         const mustCapture = allCaptureMoves.length > 0;
         
-        // Проверяем валидность конкретного хода
         const isValid = isValidMove(piece, fromRow, fromCol, toRow, toCol, board, mustCapture);
         if(!isValid) return false;
         
-        // Если мы обязаны атаковать, проверяем, что этот ход действительно атакует
         if(mustCapture) {
             const isCapture = (Math.abs(toRow - fromRow) > 1) || 
                 (piece.king && Math.abs(toRow - fromRow) > 1 && Math.abs(toCol - fromCol) > 1);
             if(!isCapture) return false;
         }
         
-        // Выполняем ход
         const { newBoard, capturedPieceType } = applyMove(board, {row: fromRow, col: fromCol}, {row: toRow, col: toCol}, piece);
         if(capturedPieceType) lastCaptureType = capturedPieceType;
         board = newBoard;
         
-        // Проверяем, может ли эта шашка продолжить взятие
         const movedPiece = board[toRow][toCol];
         const additionalCaptures = getCaptureMovesForPiece(board, toRow, toCol);
         
         if(additionalCaptures.length > 0 && movedPiece && mustCapture) {
-            // Есть возможность продолжить взятие той же шашкой
             forceContinueCapture = true;
             continuingPiece = { row: toRow, col: toCol };
             selectedRow = toRow;
@@ -276,14 +251,12 @@ function initCheckers() {
             return true;
         }
         
-        // Смена хода
         forceContinueCapture = false;
         continuingPiece = null;
         selectedRow = null;
         selectedCol = null;
         currentPlayer = 'black';
         
-        // Проверка победы
         const winner = checkWinner(board);
         if(winner) {
             endGame(winner);
@@ -293,7 +266,6 @@ function initCheckers() {
         
         renderBoard();
         
-        // Запускаем ход ИИ, если игра не окончена
         if(!gameOver && currentPlayer === 'black') {
             setTimeout(() => aiMove(), 100);
         }
@@ -301,12 +273,10 @@ function initCheckers() {
         return true;
     }
 
-    // ================= ХОД ИИ (черные) =================
     function aiMove() {
         if(gameOver || currentPlayer !== 'black' || waitingForAI) return;
         waitingForAI = true;
         
-        // Если ИИ должен продолжить взятие той же шашкой
         if(forceContinueCapture && continuingPiece) {
             const piece = board[continuingPiece.row][continuingPiece.col];
             if(piece && piece.type === 'black') {
@@ -320,7 +290,6 @@ function initCheckers() {
                     if(capturedPieceType) lastCaptureType = capturedPieceType;
                     board = newBoard;
                     
-                    // Проверяем, может ли продолжить
                     const furtherCaptures = getCaptureMovesForPiece(board, randomCapture.row, randomCapture.col);
                     if(furtherCaptures.length > 0) {
                         continuingPiece = { row: randomCapture.row, col: randomCapture.col };
@@ -331,7 +300,6 @@ function initCheckers() {
                     }
                 }
             }
-            // Завершаем цепочку взятий
             forceContinueCapture = false;
             continuingPiece = null;
             currentPlayer = 'white';
@@ -356,51 +324,47 @@ function initCheckers() {
             }
             
             let currentBoard = copyBoard(board);
-            let mustCapture = false;
-            let allMoves = getAllMovesForColor(currentBoard, 'black');
             let captureMoves = getAllMovesForColor(currentBoard, 'black', true);
             
             if(captureMoves.length > 0) {
-                mustCapture = true;
-                allMoves = captureMoves;
-            }
-            
-            if(allMoves.length === 0) {
-                const winner = checkWinner(currentBoard);
-                if(winner === 'white') endGame('white');
-                else if(winner === 'black') endGame('black');
-                else {
-                    endGame('white');
+                const randomIndex = Math.floor(Math.random() * captureMoves.length);
+                const move = captureMoves[randomIndex];
+                const piece = currentBoard[move.from.row][move.from.col];
+                
+                const { newBoard, capturedPieceType } = applyMove(currentBoard, move.from, move.to, piece);
+                if(capturedPieceType) lastCaptureType = capturedPieceType;
+                board = newBoard;
+                
+                const movedPiece = board[move.to.row][move.to.col];
+                const additionalCaptures = getCaptureMovesForPiece(board, move.to.row, move.to.col);
+                
+                if(additionalCaptures.length > 0 && movedPiece) {
+                    forceContinueCapture = true;
+                    continuingPiece = { row: move.to.row, col: move.to.col };
+                    renderBoard();
+                    waitingForAI = false;
+                    setTimeout(() => aiMove(), 100);
+                    return;
                 }
-                waitingForAI = false;
-                renderBoard();
-                return;
+            } else {
+                let allMoves = getAllMovesForColor(currentBoard, 'black', false);
+                if(allMoves.length === 0) {
+                    const winner = checkWinner(currentBoard);
+                    if(winner === 'white') endGame('white');
+                    else endGame('white');
+                    waitingForAI = false;
+                    renderBoard();
+                    return;
+                }
+                
+                const randomIndex = Math.floor(Math.random() * allMoves.length);
+                const move = allMoves[randomIndex];
+                const piece = currentBoard[move.from.row][move.from.col];
+                
+                const { newBoard } = applyMove(currentBoard, move.from, move.to, piece);
+                board = newBoard;
             }
             
-            // Выбираем случайный ход
-            const randomIndex = Math.floor(Math.random() * allMoves.length);
-            const move = allMoves[randomIndex];
-            const piece = currentBoard[move.from.row][move.from.col];
-            
-            const { newBoard, capturedPieceType } = applyMove(currentBoard, move.from, move.to, piece);
-            if(capturedPieceType) lastCaptureType = capturedPieceType;
-            board = newBoard;
-            
-            // Проверка дополнительных взятий для ИИ
-            const movedPiece = board[move.to.row][move.to.col];
-            const additionalCaptures = getCaptureMovesForPiece(board, move.to.row, move.to.col);
-            
-            if(additionalCaptures.length > 0 && movedPiece && mustCapture) {
-                // ИИ должен продолжить взятие
-                forceContinueCapture = true;
-                continuingPiece = { row: move.to.row, col: move.to.col };
-                renderBoard();
-                waitingForAI = false;
-                setTimeout(() => aiMove(), 100);
-                return;
-            }
-            
-            // Смена хода обратно игроку
             forceContinueCapture = false;
             continuingPiece = null;
             currentPlayer = 'white';
@@ -420,9 +384,9 @@ function initCheckers() {
         }, 80);
     }
 
-    // ================= ОТРИСОВКА И ОБРАБОТЧИК КЛИКОВ =================
     function renderBoard() {
-        let html = '<div class="checkers-board">';
+        let html = '<div class="game-status">🌀 ШАШКИ | Вы играете за ⚪ белых</div>';
+        html += '<div class="checkers-board">';
         for(let row = 0; row < 8; row++) {
             for(let col = 0; col < 8; col++) {
                 const cell = board[row][col];
@@ -441,7 +405,7 @@ function initCheckers() {
         const allCaptureMoves = getAllMovesForColor(board, 'white', true);
         if(currentPlayer === 'white' && !gameOver) {
             if(allCaptureMoves.length > 0) {
-                html += '<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#ff8866;">⚠️ ОБЯЗАТЕЛЬНОЕ ВЗЯТИЕ! Вы должны съесть шашку противника</div>';
+                html += '<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#ff8866;">⚠️ ОБЯЗАТЕЛЬНОЕ ВЗЯТИЕ!</div>';
             } else {
                 html += '<div style="text-align:center; margin-top:8px; font-size:0.8rem; color:#88ddff;">🎲 Ваш ход (белые)</div>';
             }
@@ -460,10 +424,6 @@ function initCheckers() {
                     const col = parseInt(cell.dataset.col);
                     handleCellClick(row, col);
                 };
-            });
-        } else {
-            document.querySelectorAll('.checkers-cell').forEach(cell => {
-                cell.onclick = null;
             });
         }
     }
@@ -491,7 +451,7 @@ function initCheckers() {
                         selectedRow = row;
                         selectedCol = col;
                     } else {
-                        document.getElementById("checkersMsg").innerHTML = "⚠️ Вы обязаны атаковать! Выберите другую шашку.";
+                        document.getElementById("checkersMsg").innerHTML = "⚠️ Вы обязаны атаковать!";
                         setTimeout(() => { document.getElementById("checkersMsg").innerHTML = ""; }, 1000);
                     }
                 } else {

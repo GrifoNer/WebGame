@@ -122,7 +122,6 @@ function continueStory() {
     setDialog("🔷 ИИ-Ассистент", introTexts[nextIdx]);
     renderButtons([{label:"🔧 НАЧАТЬ", onClick:()=> startMinigame(nextIdx)}]);
     
-    // Сохраняем текст победы для after-game
     window._pendingVictoryText = victoryTexts[nextIdx];
 }
 
@@ -135,7 +134,6 @@ function winMinigame(answerValue, gameIdx) {
     
     const done = GameState.completedGames.filter(v=>v).length;
     
-    // Специальный диалог для 3-й игры (вентиляция)
     if (gameIdx === 2 && done === 3) {
         setDialog("🔷 ИИ-Ассистент", "Вентиляция восстановлена. Осталось 2 ошибки. Но я замечаю кое-что странное в ваших биометрических данных.");
         renderButtons([{label:"➡ ДАЛЕЕ", onClick:()=> {
@@ -150,7 +148,6 @@ function winMinigame(answerValue, gameIdx) {
         return;
     }
     
-    // Специальный диалог для 4-й игры (сбой ИИ)
     if (gameIdx === 3 && done === 4) {
         setDialog("🔷 ИИ-Ассистент", "Спасибо. Я снова полностью функционален. Осталась последняя ошибка. Самая опасная.");
         renderButtons([{label:"➡ ДАЛЕЕ", onClick:()=> continueStory()}]);
@@ -162,7 +159,6 @@ function winMinigame(answerValue, gameIdx) {
     setDialog("🔷 ИИ-Ассистент", window._pendingVictoryText || `✅ ПОЛОМКА УСТРАНЕНА! Осталось ошибок: ${5-done}.`);
     
     if (done === 5) {
-        // Все 5 ошибок исправлены - переход к раскрытию правды
         setTimeout(() => {
             setDialog("🔷 ИИ-Ассистент", "Все 5 ошибок исправлены. Бункер снова дышит. Но... инженер, у меня есть плохие новости.");
             renderButtons([{label:"➡ ЧТО СЛУЧИЛОСЬ?", onClick:()=> revealTwist()}]);
@@ -214,11 +210,62 @@ let currentQ = 0;
 let wrongAnswersCount = 0;
 
 const quizData = [
-    { question: "Какое число ты угадал при калибровке реактора?", gameKey: "guessNumber", type: "number" },
-    { question: "Куда ты поставил последний победный крестик? (центр, угол и т.д.)", gameKey: "ticTacToe", type: "string" },
-    { question: "Какую шашку ты срубил последней? ('простая' или 'дамка')", gameKey: "checkers", type: "string" },
-    { question: "Какую карту ты сбросил в Дураке?", gameKey: "foolCard", type: "string" },
-    { question: "Сколько очков набрал в 21?", gameKey: "blackjack", type: "number" }
+    { 
+        question: "Какое число ты угадал при калибровке реактора?", 
+        gameKey: "guessNumber", 
+        type: "number",
+        hint: "Введи число от 1 до 100"
+    },
+    { 
+        question: "Куда ты поставил последний победный крестик?", 
+        gameKey: "ticTacToe", 
+        type: "string",
+        hint: "Варианты: угол, центр, край",
+        allowedValues: ["угол", "центр", "край"],
+        normalize: (val) => {
+            const normalized = val.toLowerCase().trim();
+            if (normalized.includes('угол') || normalized === 'угол') return 'угол';
+            if (normalized.includes('центр') || normalized === 'центр') return 'центр';
+            if (normalized.includes('край') || normalized === 'край' || 
+                normalized.includes('бок') || normalized.includes('сторона')) return 'край';
+            return normalized;
+        }
+    },
+    { 
+        question: "Какую шашку ты срубил последней?", 
+        gameKey: "checkers", 
+        type: "string",
+        hint: "Варианты: простая или дамка",
+        allowedValues: ["простая", "дамка"],
+        normalize: (val) => {
+            const normalized = val.toLowerCase().trim();
+            if (normalized.includes('прост') || normalized === 'простая') return 'простая';
+            if (normalized.includes('дамк') || normalized === 'дамка') return 'дамка';
+            return normalized;
+        }
+    },
+    { 
+        question: "Какую карту ты сбросил в Дураке? (только номинал, без масти)", 
+        gameKey: "foolCard", 
+        type: "card",
+        hint: "Введи только номинал: 6,7,8,9,10,В,Д,К,Т",
+        normalize: (val) => {
+            let normalized = val.toUpperCase().trim();
+            normalized = normalized.replace(/[♠♥♦♣]/g, '').trim();
+            if (normalized === 'ВАЛЕТ') return 'В';
+            if (normalized === 'ДАМА') return 'Д';
+            if (normalized === 'КОРОЛЬ') return 'К';
+            if (normalized === 'ТУЗ') return 'Т';
+            if (normalized === '10' || normalized === 'TEN') return '10';
+            return normalized;
+        }
+    },
+    { 
+        question: "Сколько очков ты набрал в 21? (только число)", 
+        gameKey: "blackjack", 
+        type: "number",
+        hint: "Введи число от 11 до 21"
+    }
 ];
 
 function startQuiz() {
@@ -235,22 +282,76 @@ function askQuestion() {
         return;
     }
     const q = quizData[currentQ];
+    
+    let hintHtml = '';
+    if (q.hint) {
+        hintHtml = `<p style="color:#ffaa77; font-size:0.8rem; margin-top:5px;">💡 ${q.hint}</p>`;
+    }
+    
     dom.gameWidget.innerHTML = `<div class="game-status">🧠 ТЕСТ ПАМЯТИ | Вопрос ${currentQ+1}/5</div>
-    <div style="background:#000000aa; border-radius: 30px; padding:1.5rem;">
-        <p style="color:#b0f0ff; font-size:1.2rem">${q.question}</p>
-        <div class="flex-row"><input type="text" id="quizAnswer" autocomplete="off" style="width:260px;" placeholder="твой ответ..."><button id="submitQuiz" class="success-btn">ОТВЕТИТЬ</button></div>
+    <div style="background:#000000aa; border-radius: 30px; padding:1.2rem;">
+        <p style="color:#b0f0ff; font-size:1.1rem; margin-bottom:10px;">${q.question}</p>
+        ${hintHtml}
+        <div class="flex-row" style="margin-top:15px;">
+            <input type="text" id="quizAnswer" autocomplete="off" style="width:200px;" placeholder="твой ответ...">
+            <button id="submitQuiz" class="success-btn">ОТВЕТИТЬ</button>
+        </div>
     </div>`;
+    
+    if (q.gameKey === 'foolCard') {
+        const hintDiv = document.createElement('div');
+        hintDiv.style.cssText = 'text-align:center; margin-top:10px; font-size:0.7rem; color:#888;';
+        hintDiv.innerHTML = 'Примеры: 6, 7, 8, 9, 10, В, Д, К, Т';
+        dom.gameWidget.appendChild(hintDiv);
+    }
+    
+    if (q.gameKey === 'blackjack') {
+        const hintDiv = document.createElement('div');
+        hintDiv.style.cssText = 'text-align:center; margin-top:10px; font-size:0.7rem; color:#888;';
+        hintDiv.innerHTML = 'Пример: 21, 20, 19 и т.д.';
+        dom.gameWidget.appendChild(hintDiv);
+    }
+    
     document.getElementById("submitQuiz").onclick = () => {
         let userVal = document.getElementById("quizAnswer").value.trim();
         if(userVal === "") return;
+        
         const correctVal = GameState.gameAnswers[q.gameKey];
         let isCorrect = false;
-        if(q.type === "number") isCorrect = (parseInt(userVal) === correctVal);
-        else isCorrect = (userVal.toLowerCase() === correctVal.toString().toLowerCase());
         
-        if(!isCorrect) {
+        if (q.type === "number") {
+            const userNum = parseInt(userVal);
+            const correctNum = parseInt(correctVal);
+            isCorrect = (userNum === correctNum);
+        } 
+        else if (q.type === "string") {
+            let normalizedUser = userVal.toLowerCase().trim();
+            let normalizedCorrect = correctVal.toString().toLowerCase().trim();
+            
+            if (q.normalize) {
+                normalizedUser = q.normalize(userVal);
+                normalizedCorrect = q.normalize(correctVal.toString());
+            }
+            
+            isCorrect = (normalizedUser === normalizedCorrect);
+        }
+        else if (q.type === "card") {
+            let normalizedUser = q.normalize ? q.normalize(userVal) : userVal.toUpperCase().trim();
+            let normalizedCorrect = correctVal.toString().toUpperCase().trim();
+            normalizedCorrect = normalizedCorrect.replace(/[♠♥♦♣]/g, '').trim();
+            isCorrect = (normalizedUser === normalizedCorrect);
+        }
+        
+        if (!isCorrect) {
             wrongAnswersCount++;
-            setDialog("🔴 ИИ-Ассистент", `❌ Неверно! Правильно: ${correctVal}. +1 патрон.`);
+            let displayCorrect = correctVal;
+            if (q.gameKey === 'foolCard') {
+                displayCorrect = correctVal.toString().replace(/[♠♥♦♣]/g, '').trim();
+            }
+            if (q.gameKey === 'ticTacToe') {
+                displayCorrect = correctVal.toString().toLowerCase();
+            }
+            setDialog("🔴 ИИ-Ассистент", `❌ Неверно! Правильно: ${displayCorrect}. +1 патрон.`);
         } else {
             setDialog("🟢 ИИ-Ассистент", "✅ Верно! Патронов не добавили.");
         }
@@ -265,7 +366,9 @@ function finishQuizAndRoulette() {
     clearWidget();
     dom.gameWidget.innerHTML = `<div class="roulette-dramatic">🔫 РУССКАЯ РУЛЕТКА 🔫</div>
     <div class="game-status">⚡ Патроны: ${wrongAnswersCount} из 6</div>
-    <div style="text-align:center; margin-top: 25px;"><button id="rouletteBtn" style="background:#a1222f; font-size:1.3rem; padding:12px 38px;">💥 ВЫСТРЕЛИТЬ 💥</button></div>`;
+    <div style="text-align:center; margin-top: 25px;">
+        <button id="rouletteBtn" style="background:#a1222f; font-size:1.3rem; padding:12px 38px; cursor:pointer;">💥 ВЫСТРЕЛИТЬ 💥</button>
+    </div>`;
     
     document.getElementById("rouletteBtn").onclick = () => {
         let fired = false;
@@ -275,7 +378,6 @@ function finishQuizAndRoulette() {
         }
         
         if (!fired) {
-            // Определяем финал в зависимости от количества ошибок
             if (wrongAnswersCount === 0) {
                 showEnding('survive');
             } else if (wrongAnswersCount <= 2) {

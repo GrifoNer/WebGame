@@ -4,15 +4,27 @@ function initTicTacToe() {
     let gameActive = true;
     let lastMovePos = "центр";
     
-    const positions = ["верхний-левый","верхний-центр","верхний-правый","средний-левый","центр","средний-правый","нижний-левый","нижний-центр","нижний-правый"];
+    const positions = [
+        "угол", "угол", "угол",
+        "угол", "центр", "угол",
+        "угол", "угол", "угол"
+    ];
+    
+    // Функция определения типа позиции
+    function getPositionType(idx) {
+        if (idx === 4) return "центр";
+        if (idx === 0 || idx === 2 || idx === 6 || idx === 8) return "угол";
+        return "край";
+    }
     
     const renderBoard = () => {
-        let html = '<div class="grid-3x3">';
-        for(let i=0;i<9;i++) {
-            let sym = board[i] === 'X' ? '❌' : (board[i]==='O' ? '⭕' : '');
+        let html = '<div class="game-status">❌ КРЕСТИКИ-НОЛИКИ | Ваш ход: X</div>';
+        html += '<div class="grid-3x3">';
+        for(let i = 0; i < 9; i++) {
+            let sym = board[i] === 'X' ? '❌' : (board[i] === 'O' ? '⭕' : '');
             html += `<div class="cell" data-idx="${i}">${sym}</div>`;
         }
-        html += '</div><div id="tttMsg" style="text-align:center;"></div>';
+        html += '</div><div id="tttMsg" style="text-align:center; margin-top:10px;"></div>';
         dom.gameWidget.innerHTML = html;
         
         document.querySelectorAll('.cell').forEach(cell => {
@@ -21,8 +33,11 @@ function initTicTacToe() {
                 let idx = parseInt(cell.dataset.idx);
                 if(board[idx]) return;
                 board[idx] = 'X';
-                lastMovePos = positions[idx];
-                if(checkWin('X')) { winMinigame(lastMovePos, 1); return; }
+                lastMovePos = getPositionType(idx);
+                if(checkWin('X')) {
+                    winMinigame(lastMovePos, 1);
+                    return;
+                }
                 if(board.every(c=>c!==null)) { resetTie(); return; }
                 playerTurn = false;
                 setTimeout(aiMove, 300);
@@ -32,7 +47,11 @@ function initTicTacToe() {
     };
     
     const checkWin = (p) => {
-        const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        const lines = [
+            [0,1,2], [3,4,5], [6,7,8],
+            [0,3,6], [1,4,7], [2,5,8],
+            [0,4,8], [2,4,6]
+        ];
         if(lines.some(line => line.every(i=>board[i]===p))) {
             gameActive = false;
             return p === 'X';
