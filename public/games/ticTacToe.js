@@ -81,4 +81,25 @@ function initTicTacToe() {
         renderBoard();
     };
     renderBoard();
+    document.querySelectorAll('.cell').forEach(cell => {
+    cell.onclick = () => {
+        if(!playerTurn || !gameActive) return;
+        // Звук клика
+        if (typeof SoundManager !== 'undefined') {
+            SoundManager.play('click', 0.2);
+        }
+        let idx = parseInt(cell.dataset.idx);
+        if(board[idx]) return;
+        board[idx] = 'X';
+        lastMovePos = getPositionType(idx);
+        if(checkWin('X')) {
+            winMinigame(lastMovePos, 1);
+            return;
+        }
+        if(board.every(c=>c!==null)) { resetTie(); return; }
+        playerTurn = false;
+        setTimeout(aiMove, 300);
+        renderBoard();
+    };
+});
 }

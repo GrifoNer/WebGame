@@ -430,6 +430,18 @@ function initCheckers() {
                 };
             });
         }
+        document.querySelectorAll('.checkers-cell').forEach(cell => {
+    cell.onclick = () => {
+        if(gameOver || currentPlayer !== 'white') return;
+        // Звук клика
+        if (typeof SoundManager !== 'undefined') {
+            SoundManager.play('click', 0.15);
+        }
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        handleCellClick(row, col);
+    };
+});
     }
     
     function handleCellClick(row, col) {

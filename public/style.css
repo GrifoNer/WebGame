@@ -841,3 +841,6 @@ body {
     transform: none !important;
     transition: none !important;
 }
+
+.hide-game { display: none !important; }
+.hide-dialog { display: none !important; }

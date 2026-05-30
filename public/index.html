@@ -14,182 +14,113 @@
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="icons/icon-512.png">
     
-    <!-- SEO -->
-    <meta name="description" content="Психологический триллер-головоломка. Исправляй ошибки в бункере, сражайся со своим безумием и пройди русскую рулетку.">
-    <meta name="keywords" content="игра, триллер, головоломка, бункер, психология">
-    
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    
-    <style>
-        /* Дополнительные стили для режимов отображения */
-        .game-area.hide-game {
-            display: none !important;
-        }
-        
-        .dialog-panel.hide-dialog {
-            display: none !important;
-        }
-        
-        .game-container {
-            transition: all 0.3s ease;
-        }
-        
-        /* Адаптация для мобильных */
-        @media (max-width: 768px) {
-            .game-area {
-                padding: 0.8rem;
-            }
-            
-            .dialog-panel {
-                padding: 0.6rem 0.8rem;
-            }
-            
-            .dialog-text {
-                font-size: 0.85rem;
-                min-height: 50px;
-            }
-        }
-    </style>
 </head>
 <body>
 <div class="game-container" id="gameRoot">
-    <!-- Сцена с фоном -->
     <div class="scene" id="sceneBg">
         <div class="scene-overlay">
             <div class="speaker" id="speakerName">🔷 ИИ-Ассистент</div>
         </div>
     </div>
     
-    <!-- Панель диалога -->
     <div class="dialog-panel" id="dialogPanel">
         <div class="dialog-text" id="dialogMsg">Загрузка нейросети бункера 200...</div>
     </div>
     
-    <!-- Игровая область -->
     <div class="game-area" id="gameArea">
         <div class="game-status" id="gameStatus">⚡ СИСТЕМА ГОТОВА</div>
         <div id="gameWidget"></div>
     </div>
     
-    <!-- Кнопки действий -->
     <div class="action-buttons" id="actionButtons"></div>
 </div>
 
-<!-- Кнопка установки PWA (показывается только при возможности установки) -->
-<div id="installPrompt" style="display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; background: #0a0f2aee; backdrop-filter: blur(10px); border: 2px solid #0ff; border-radius: 15px; padding: 12px; z-index: 10001; text-align: center;">
-    <div style="color: #0ff; margin-bottom: 8px; font-size: 0.9rem;">📱 Установите приложение</div>
-    <div style="color: #ccc; font-size: 0.75rem; margin-bottom: 10px;">Играйте в Бункер 200 как в отдельном приложении</div>
-    <button id="installBtn" style="background: #0f4a3a; border: none; padding: 6px 16px; border-radius: 20px; color: white; cursor: pointer;">УСТАНОВИТЬ</button>
-    <button id="closeInstallBtn" style="background: none; border: 1px solid #666; padding: 6px 16px; border-radius: 20px; color: #ccc; cursor: pointer; margin-left: 10px;">ЗАКРЫТЬ</button>
-</div>
+<!-- Кнопка управления звуком -->
+<button id="soundToggleBtn" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: #1f2a46; border: 1px solid cyan; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">
+    🔊
+</button>
 
 <script>
-    // ========== PWA УСТАНОВКА ==========
-    let deferredPrompt;
-    
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        const installPrompt = document.getElementById('installPrompt');
-        if (installPrompt) installPrompt.style.display = 'block';
-        
-        const installBtn = document.getElementById('installBtn');
-        const closeBtn = document.getElementById('closeInstallBtn');
-        
-        if (installBtn) {
-            installBtn.onclick = () => {
-                if (installPrompt) installPrompt.style.display = 'none';
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('Пользователь установил PWA');
-                        }
-                        deferredPrompt = null;
-                    });
-                }
-            };
-        }
-        
-        if (closeBtn) {
-            closeBtn.onclick = () => {
-                if (installPrompt) installPrompt.style.display = 'none';
-            };
-        }
-    });
-    
-    // ========== SERVICE WORKER ==========
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => {
-                    console.log('✅ Service Worker зарегистрирован:', registration);
-                })
-                .catch(error => {
-                    console.log('❌ Ошибка регистрации SW:', error);
-                });
-        });
+// ========== PWA УСТАНОВКА ==========
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
+// ========== SERVICE WORKER (временно отключен для отладки) ==========
+// if ('serviceWorker' in navigator) {
+//     window.addEventListener('load', () => {
+//         navigator.serviceWorker.register('/sw.js')
+//             .then(registration => {
+//                 console.log('Service Worker зарегистрирован:', registration);
+//             })
+//             .catch(error => {
+//                 console.log('Ошибка регистрации SW:', error);
+//             });
+//     });
+// }
+
+// ========== СОХРАНЕНИЕ ПРОГРЕССА ==========
+function saveGameProgress() {
+    if (typeof GameState !== 'undefined' && GameState) {
+        const progress = {
+            completedGames: GameState.completedGames,
+            gameAnswers: GameState.gameAnswers,
+            stage: GameState.stage,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('bunker200_progress', JSON.stringify(progress));
     }
-    
-    // ========== СОХРАНЕНИЕ ПРОГРЕССА ==========
-    function saveGameProgress() {
-        if (typeof GameState !== 'undefined' && GameState) {
-            const progress = {
-                completedGames: GameState.completedGames,
-                gameAnswers: GameState.gameAnswers,
-                stage: GameState.stage,
-                timestamp: Date.now()
-            };
-            localStorage.setItem('bunker200_progress', JSON.stringify(progress));
+}
+
+function loadGameProgress() {
+    const saved = localStorage.getItem('bunker200_progress');
+    if (saved && typeof GameState !== 'undefined' && GameState) {
+        try {
+            const progress = JSON.parse(saved);
+            if (progress.completedGames) GameState.completedGames = progress.completedGames;
+            if (progress.gameAnswers) GameState.gameAnswers = progress.gameAnswers;
+            if (progress.stage) GameState.stage = progress.stage;
+            console.log('Прогресс загружен');
+        } catch(e) {
+            console.log('Ошибка загрузки прогресса:', e);
         }
     }
-    
-    function loadGameProgress() {
-        const saved = localStorage.getItem('bunker200_progress');
-        if (saved && typeof GameState !== 'undefined' && GameState) {
-            try {
-                const progress = JSON.parse(saved);
-                if (progress.completedGames) GameState.completedGames = progress.completedGames;
-                if (progress.gameAnswers) GameState.gameAnswers = progress.gameAnswers;
-                if (progress.stage) GameState.stage = progress.stage;
-                console.log('📀 Прогресс загружен из localStorage');
-            } catch(e) {
-                console.log('Ошибка загрузки прогресса:', e);
-            }
-        }
+}
+
+setInterval(() => {
+    if (typeof GameState !== 'undefined' && GameState && GameState.stage !== 'prologue') {
+        saveGameProgress();
     }
-    
-    // Автосохранение каждые 30 секунд
-    setInterval(() => {
-        if (typeof GameState !== 'undefined' && GameState.stage !== 'prologue') {
-            saveGameProgress();
-        }
-    }, 30000);
-    
-    // Сохраняем при закрытии страницы
-    window.addEventListener('beforeunload', () => {
-        if (typeof GameState !== 'undefined') {
-            saveGameProgress();
-        }
-    });
-    
-    // Загружаем прогресс при старте
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            loadGameProgress();
-        }, 100);
-    });
+}, 30000);
+
+window.addEventListener('beforeunload', () => {
+    if (typeof GameState !== 'undefined') saveGameProgress();
+});
+
+// Управление звуком
+document.getElementById('soundToggleBtn')?.addEventListener('click', () => {
+    if (typeof SoundManager !== 'undefined') {
+        const enabled = SoundManager.toggleSound();
+        document.getElementById('soundToggleBtn').textContent = enabled ? '🔊' : '🔇';
+    }
+});
+
+window.addEventListener('load', () => {
+    setTimeout(() => loadGameProgress(), 100);
+});
 </script>
 
-<!-- Подключаем мини-игры -->
+<script src="sounds.js"></script>
 <script src="games/guessNumber.js"></script>
 <script src="games/ticTacToe.js"></script>
 <script src="games/checkers.js"></script>
 <script src="games/fool.js"></script>
 <script src="games/blackjack.js"></script>
-
-<!-- Основной файл игры -->
 <script src="game.js"></script>
 
 </body>

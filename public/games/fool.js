@@ -457,6 +457,17 @@ function initFool() {
                 }
             };
         }
+        document.querySelectorAll('.card[data-card-idx]').forEach(cardDiv => {
+    cardDiv.onclick = () => {
+        if(!gameActive) return;
+        // Звук клика по карте
+        if (typeof SoundManager !== 'undefined') {
+            SoundManager.play('click', 0.15);
+        }
+        const idx = parseInt(cardDiv.dataset.cardIdx);
+        playerAction(idx);
+    };
+});
     }
     
     function init() {

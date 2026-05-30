@@ -18,141 +18,69 @@ const dom = {
     gameStatus: document.getElementById("gameStatus"),
     actionDiv: document.getElementById("actionButtons"),
     gameArea: document.getElementById("gameArea"),
-    dialogPanel: document.querySelector(".dialog-panel"),
-    gameContainer: document.querySelector(".game-container")
+    dialogPanel: document.getElementById("dialogPanel"),
+    gameContainer: document.getElementById("gameRoot")
 };
 
-// ========== УПРАВЛЕНИЕ РЕЖИМАМИ ОТОБРАЖЕНИЯ С ПЛАВНОСТЬЮ ==========
+// ========== УПРАВЛЕНИЕ РЕЖИМАМИ ==========
 function setMode(mode) {
-    const gameArea = dom.gameArea;
-    const dialogPanel = dom.dialogPanel;
-    const gameContainer = dom.gameContainer;
+    if (!dom.gameArea || !dom.dialogPanel || !dom.gameContainer) return;
     
     if (mode === 'dialog') {
-        // Плавное скрытие игры и показ диалога
-        gameArea.classList.add('hide-game');
-        dialogPanel.classList.remove('hide-dialog');
-        gameContainer.classList.add('dialog-mode');
-        gameContainer.classList.remove('game-mode', 'both-mode');
-        
-        // Небольшая задержка для плавности
-        setTimeout(() => {
-            if (gameArea.classList.contains('hide-game')) {
-                gameArea.style.display = 'none';
-            }
-        }, 400);
-        
+        dom.gameArea.classList.add('hide-game');
+        dom.dialogPanel.classList.remove('hide-dialog');
+        dom.gameContainer.classList.add('dialog-mode');
+        dom.gameContainer.classList.remove('game-mode', 'both-mode');
     } else if (mode === 'game') {
-        // Плавное скрытие диалога и показ игры
-        gameArea.style.display = 'block';
-        dialogPanel.classList.add('hide-dialog');
-        gameArea.classList.remove('hide-game');
-        gameContainer.classList.add('game-mode');
-        gameContainer.classList.remove('dialog-mode', 'both-mode');
-        
-        setTimeout(() => {
-            if (dialogPanel.classList.contains('hide-dialog')) {
-                // Диалог скрыт
-            }
-        }, 400);
-        
+        dom.gameArea.style.display = 'block';
+        dom.dialogPanel.classList.add('hide-dialog');
+        dom.gameArea.classList.remove('hide-game');
+        dom.gameContainer.classList.add('game-mode');
+        dom.gameContainer.classList.remove('dialog-mode', 'both-mode');
     } else if (mode === 'both') {
-        // Показываем оба
-        gameArea.style.display = 'block';
-        dialogPanel.classList.remove('hide-dialog');
-        gameArea.classList.remove('hide-game');
-        gameContainer.classList.add('both-mode', 'game-mode');
-        gameContainer.classList.remove('dialog-mode');
+        dom.gameArea.style.display = 'block';
+        dom.dialogPanel.classList.remove('hide-dialog');
+        dom.gameArea.classList.remove('hide-game');
+        dom.gameContainer.classList.add('both-mode', 'game-mode');
+        dom.gameContainer.classList.remove('dialog-mode');
     }
 }
 
-function showDialogOnly() {
-    setMode('dialog');
-}
+function showDialogOnly() { setMode('dialog'); }
+function showGameOnly() { setMode('game'); }
+function showBoth() { setMode('both'); }
 
-function showGameOnly() {
-    setMode('game');
-}
-
-function showBoth() {
-    setMode('both');
-}
-
-function showDialogOnly() {
-    setMode('dialog');
-}
-
-function showGameOnly() {
-    setMode('game');
-}
-
-function showBoth() {
-    setMode('both');
-}
-
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 function setDialog(speaker, text, showGame = false) {
-    // Анимация смены текста
-    const dialogMsg = dom.dialog;
-    dialogMsg.style.opacity = '0';
-    dialogMsg.style.transform = 'translateX(-10px)';
-    
-    setTimeout(() => {
-        dom.speaker.innerText = speaker;
-        dialogMsg.innerText = text;
-        dialogMsg.style.opacity = '1';
-        dialogMsg.style.transform = 'translateX(0)';
-    }, 150);
-    
-    if (showGame) {
-        showBoth();
-    } else {
-        showDialogOnly();
-    }
+    if (dom.speaker) dom.speaker.innerText = speaker;
+    if (dom.dialog) dom.dialog.innerText = text;
+    if (showGame) showBoth();
+    else showDialogOnly();
 }
 
 function setBackground(url) {
-    dom.scene.style.backgroundImage = `url('${url}')`;
+    if (dom.scene) dom.scene.style.backgroundImage = `url('${url}')`;
 }
 
-function clearWidget() {
-    const widget = dom.gameWidget;
-    // Для шашек (индекс 2) и дурака (индекс 3) не делаем плавное исчезновение
-    if (GameState.activeGame === 2 || GameState.activeGame === 3) {
-        widget.innerHTML = "";
-    } else {
-        if (widget.children.length > 0) {
-            widget.style.opacity = '0';
-            widget.style.transform = 'translateY(10px)';
-            setTimeout(() => {
-                widget.innerHTML = "";
-                widget.style.opacity = '1';
-                widget.style.transform = 'translateY(0)';
-            }, 200);
-        } else {
-            widget.innerHTML = "";
-        }
-    }
-}
+function clearWidget() { if (dom.gameWidget) dom.gameWidget.innerHTML = ""; }
 
 function renderButtons(buttons) {
-    const actionDiv = dom.actionDiv;
-    actionDiv.style.opacity = '0';
-    actionDiv.style.transform = 'translateY(10px)';
-    
-    setTimeout(() => {
-        actionDiv.innerHTML = "";
-        buttons.forEach(btn => {
-            const button = document.createElement("button");
-            button.innerText = btn.label;
-            if (btn.danger) button.classList.add("danger-btn");
-            if (btn.success) button.classList.add("success-btn");
-            button.onclick = () => btn.onClick?.();
-            actionDiv.appendChild(button);
-        });
-        
-        actionDiv.style.opacity = '1';
-        actionDiv.style.transform = 'translateY(0)';
-    }, 150);
+    if (!dom.actionDiv) return;
+    dom.actionDiv.innerHTML = "";
+    buttons.forEach(btn => {
+        const button = document.createElement("button");
+        button.innerText = btn.label;
+        if (btn.danger) button.classList.add("danger-btn");
+        if (btn.success) button.classList.add("success-btn");
+        button.onclick = () => {
+            // Звук клика при нажатии на кнопку
+            if (typeof SoundManager !== 'undefined') {
+                SoundManager.play('click', 0.2);
+            }
+            btn.onClick?.();
+        };
+        dom.actionDiv.appendChild(button);
+    });
 }
 
 // ========== ПРОЛОГ ==========
@@ -160,6 +88,11 @@ function startPrologue() {
     GameState.stage = "prologue";
     GameState.prologueStep = 0;
     setBackground("https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?w=1100&auto=format");
+    
+     // Запуск фоновой музыки
+    if (typeof SoundManager !== 'undefined') {
+        SoundManager.startAmbience();
+    }
     
     const prologueTexts = [
         { speaker: "🔷 ИИ-Ассистент", text: "«Бункер 200. Где-то под землёй. 48 человек. Автономный режим — 5 лет.»" },
@@ -185,7 +118,6 @@ function startPrologue() {
             onClick: () => showNextPrologue()
         }]);
     }
-    
     showNextPrologue();
 }
 
@@ -200,10 +132,7 @@ function startGame() {
 function continueStory() {
     const completed = GameState.completedGames;
     const nextIdx = completed.findIndex(v => !v);
-    if (nextIdx === -1) { 
-        revealTwist(); 
-        return; 
-    }
+    if (nextIdx === -1) { revealTwist(); return; }
     
     const introTexts = [
         "Первая ошибка: нестабильность датчиков реактора. Чтобы откалибровать, сыграем в \"Угадай число\". У вас 10 попыток.",
@@ -226,10 +155,7 @@ function winMinigame(answerValue, gameIdx) {
     GameState.gameAnswers[keys[gameIdx]] = answerValue;
     
     const done = GameState.completedGames.filter(v=>v).length;
-    
-    // Очищаем игровую область ПОЛНОСТЬЮ
     clearWidget();
-    // Показываем диалог
     showDialogOnly();
     
     const victoryTexts = [
@@ -250,14 +176,9 @@ function winMinigame(answerValue, gameIdx) {
 }
 
 function startMinigame(idx) {
-    if (GameState.completedGames[idx]) { 
-        continueStory(); 
-        return; 
-    }
+    if (GameState.completedGames[idx]) { continueStory(); return; }
     GameState.stage = "playing_minigame";
     GameState.activeGame = idx;
-    
-    // Показываем игровую область, скрываем диалог
     showGameOnly();
     clearWidget();
     
@@ -320,7 +241,6 @@ function askQuestion() {
         return;
     }
     const q = quizData[currentQ];
-    
     let hintHtml = q.hint ? `<p style="color:#ffaa77; font-size:0.8rem; margin-top:5px;">💡 ${q.hint}</p>` : '';
     
     dom.gameWidget.innerHTML = `<div class="game-status">🧠 ТЕСТ ПАМЯТИ | Вопрос ${currentQ+1}/5</div>
@@ -336,7 +256,6 @@ function askQuestion() {
     document.getElementById("submitQuiz").onclick = () => {
         let userVal = document.getElementById("quizAnswer").value.trim();
         if(userVal === "") return;
-        
         const correctVal = GameState.gameAnswers[q.gameKey];
         let isCorrect = false;
         
@@ -372,6 +291,8 @@ function finishQuizAndRoulette() {
     </div>`;
     
     document.getElementById("rouletteBtn").onclick = () => {
+        if (typeof SoundManager !== 'undefined') SoundManager.play('gunshot', 0.9);
+        
         let fired = false;
         if (wrongAnswersCount > 0) {
             let chamber = Math.floor(Math.random() * 6);
@@ -395,6 +316,12 @@ function showEnding(endingType) {
     GameState.stage = "ending";
     clearWidget();
     showDialogOnly();
+    
+    if (endingType === 'death' && typeof SoundManager !== 'undefined') {
+        SoundManager.play('gunshot', 0.9);
+    } else if (endingType === 'survive' && typeof SoundManager !== 'undefined') {
+        SoundManager.play('win', 0.6);
+    }
     
     const endings = {
         survive: { dialog: "Щелчок. Пусто.", nextDialog: "Ты всё помнишь. Я ввожу вакцину...", finalMessage: "Бункер 200 работает. Добро пожаловать домой, инженер." },
@@ -422,27 +349,9 @@ let testPanelElement = null;
 
 function createTestPanel() {
     if(testPanelElement) return;
-    
     testPanelElement = document.createElement("div");
     testPanelElement.id = "testPanel";
-    testPanelElement.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #0a0f2aee;
-        backdrop-filter: blur(10px);
-        border: 2px solid #0ff;
-        border-radius: 15px;
-        padding: 15px;
-        z-index: 10000;
-        font-family: 'Orbitron', monospace;
-        color: #0ff;
-        min-width: 260px;
-        box-shadow: 0 0 20px rgba(0,255,255,0.3);
-        display: none;
-        flex-direction: column;
-        gap: 8px;
-    `;
+    testPanelElement.style.cssText = `position: fixed; bottom: 20px; right: 20px; background: #0a0f2aee; backdrop-filter: blur(10px); border: 2px solid #0ff; border-radius: 15px; padding: 15px; z-index: 10000; font-family: 'Orbitron', monospace; color: #0ff; min-width: 260px; display: none; flex-direction: column; gap: 8px;`;
     
     const title = document.createElement("div");
     title.innerText = "🔧 ТЕСТОВАЯ ПАНЕЛЬ (Shift+T)";
@@ -465,13 +374,10 @@ function createTestPanel() {
     levels.forEach(level => {
         const btn = document.createElement("button");
         btn.innerText = level.name;
-        btn.style.cssText = `background: #1f2a46; border: 1px solid cyan; border-radius: 20px; padding: 6px 12px; color: #bbf0ff; cursor: pointer; font-family: 'Orbitron', monospace; font-size: 0.7rem; transition: 0.1s;`;
-        btn.onmouseenter = () => { btn.style.background = "#2f3f60"; btn.style.transform = "scale(0.98)"; };
-        btn.onmouseleave = () => { btn.style.background = "#1f2a46"; btn.style.transform = "scale(1)"; };
+        btn.style.cssText = `background: #1f2a46; border: 1px solid cyan; border-radius: 20px; padding: 6px 12px; color: #bbf0ff; cursor: pointer; font-family: 'Orbitron', monospace; font-size: 0.7rem;`;
         btn.onclick = () => { level.action(); toggleTestPanel(); };
         testPanelElement.appendChild(btn);
     });
-    
     document.body.appendChild(testPanelElement);
 }
 
@@ -494,8 +400,5 @@ document.addEventListener("keydown", function(event) {
     }
 });
 
-// ========== ЗАПУСК ==========
-function init() {
-    startPrologue();
-}
+function init() { startPrologue(); }
 init();

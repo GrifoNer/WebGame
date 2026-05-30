@@ -13,7 +13,7 @@ function initBlackjack() {
     
     function createDeck() {
         const suits = ['♠', '♥', '♦', '♣'];
-        const values = ['2','3','4','5','6','7','8','9','10','В','Д','К','Т'];
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т'];
         let newDeck = [];
         for(let set = 0; set < 6; set++) {
             for(let suit of suits) {
@@ -130,7 +130,8 @@ function initBlackjack() {
             roundInProgress = false;
             renderGame();
             setTimeout(() => {
-                document.getElementById("bjMsg").innerHTML = "💀 ДИЛЕР ПОБЕДИЛ! Перезапуск...";
+                const msgDiv = document.getElementById("bjMsg");
+                if(msgDiv) msgDiv.innerHTML = "💀 ДИЛЕР ПОБЕДИЛ! Перезапуск...";
                 setTimeout(() => initBlackjack(), 2000);
             }, 100);
             return;
@@ -180,6 +181,7 @@ function initBlackjack() {
         
         let html = `<div class="game-status">🎰 БЛЭКДЖЕК | Счет: ${playerWins} : ${dealerWins} | До ${WIN_GOAL} побед</div>`;
         
+        // Карты дилера
         html += `<div style="margin-bottom: 20px; background:#0a1020; border-radius: 15px; padding: 15px;">`;
         html += `<strong style="color:#ffffff;">🤖 ДИЛЕР</strong><br>`;
         html += `<div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">`;
@@ -187,12 +189,12 @@ function initBlackjack() {
         if(roundInProgress && canHit) {
             if(dealerCards.length > 0) {
                 const card = dealerCards[0];
-                html += `<div style="background: linear-gradient(145deg, #191e30, #0b0f1c); border: 1px solid gold; border-radius: 12px; padding: 12px 18px; font-size: 1.3rem; color: ${getCardColor(card.suit)};">${card.full}</div>`;
-                html += `<div style="background: linear-gradient(145deg, #2a1a3a, #1a0a2a); border: 1px solid #888; border-radius: 12px; padding: 12px 18px; font-size: 1.3rem; color: #aaa;">🃟?</div>`;
+                html += `<div class="bj-card" style="background: linear-gradient(145deg, #191e30, #0b0f1c); border: 1px solid gold; border-radius: 12px; padding: 12px 18px; font-size: 1.3rem; color: ${getCardColor(card.suit)};">${card.full}</div>`;
+                html += `<div class="bj-card" style="background: linear-gradient(145deg, #2a1a3a, #1a0a2a); border: 1px solid #888; border-radius: 12px; padding: 12px 18px; font-size: 1.3rem; color: #aaa;">🃟?</div>`;
             }
         } else {
-            dealerCards.forEach((card, idx) => {
-                html += `<div style="background: linear-gradient(145deg, #191e30, #0b0f1c); border: 1px solid gold; border-radius: 12px; padding: 12px 18px; font-size: 1.3rem; color: ${getCardColor(card.suit)};">${card.full}</div>`;
+            dealerCards.forEach((card) => {
+                html += `<div class="bj-card" style="background: linear-gradient(145deg, #191e30, #0b0f1c); border: 1px solid gold; border-radius: 12px; padding: 12px 18px; font-size: 1.3rem; color: ${getCardColor(card.suit)};">${card.full}</div>`;
             });
         }
         
@@ -201,14 +203,16 @@ function initBlackjack() {
         }
         html += `</div></div>`;
         
+        // Карты игрока
         html += `<div style="margin-bottom: 20px; background:#0a1020; border-radius: 15px; padding: 15px;">`;
         html += `<strong style="color:#ffffff;">🎴 ВАШИ КАРТЫ (${playerScore} очков)</strong><br>`;
         html += `<div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">`;
         playerCards.forEach((card) => {
-            html += `<div style="background: linear-gradient(145deg, #191e30, #0b0f1c); border: 1px solid gold; border-radius: 12px; padding: 12px 18px; font-size: 1.3rem; color: ${getCardColor(card.suit)};">${card.full}</div>`;
+            html += `<div class="bj-card" style="background: linear-gradient(145deg, #191e30, #0b0f1c); border: 1px solid gold; border-radius: 12px; padding: 12px 18px; font-size: 1.3rem; color: ${getCardColor(card.suit)};">${card.full}</div>`;
         });
         html += `</div></div>`;
         
+        // Кнопки действий
         if(roundInProgress && canHit && !gameWinner) {
             html += `<div class="flex-row" style="gap: 15px; margin-top: 10px;">`;
             html += `<button id="hitBtn" class="success-btn">📤 ВЗЯТЬ КАРТУ</button>`;
@@ -236,15 +240,22 @@ function initBlackjack() {
         
         const hitBtn = document.getElementById("hitBtn");
         if(hitBtn) {
-            hitBtn.onclick = () => playerHit();
+            hitBtn.onclick = () => {
+                if (typeof SoundManager !== 'undefined') SoundManager.play('click', 0.2);
+                playerHit();
+            };
         }
         
         const standBtn = document.getElementById("standBtn");
         if(standBtn) {
-            standBtn.onclick = () => playerStand();
+            standBtn.onclick = () => {
+                if (typeof SoundManager !== 'undefined') SoundManager.play('click', 0.2);
+                playerStand();
+            };
         }
     }
     
+    // Инициализация
     deck = createDeck();
     playerWins = 0;
     dealerWins = 0;
